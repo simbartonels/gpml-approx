@@ -22,14 +22,22 @@ A = 1/sn2*(Phi*Phi')+SigmaInv;                      % evaluate covariance matrix
 L = chol(A);
 clear A;
 m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
-post.alpha = solve_chol(L, Phi*(y-m));
+post.alpha = solve_chol(L, Phi*(y-m)) / sn2;
 post.L = solve_chol(L, eye(size(L, 1)));%return inverse of A
 post.sW = ones(size(L, 1),1)/sqrt(sn2);                  % sqrt of noise precision vector
+clear L;
 
 if nargout>1                               % do we want the marginal likelihood?
-  error('TODO: implement computation of marginal likelihood!');
-  nlZ = (y-m)'*alpha/2 + sum(log(diag(L))) + n*log(2*pi*sn2)/2;  % -log marg lik
+%  error('TODO: implement computation of marginal likelihood!');
+  %the following formula is taken from Solin (hopefully this is general
+  %enough!)
+  Qhat = Phi' * diag(hyp.weight_prior) * Phi + sn2*eye(n);
+  Lhat = chol(Qhat);
+  clear Qhat;
+  nlZ = (y-m)'*solve_chol(Lhat, (y-m))/2 + sum(log(diag(Lhat))) + n*log(2*pi)/2;  % -log marg lik
+  %nlZ = (y-m)'*Phi'*post.alpha/2 + sum(log(diag(L))) + n*log(2*pi*sn2)/2;  % -log marg lik
   if nargout>2                                         % do we want derivatives?
+    
     error('Computing derivatives not supported!');
   end
 end
