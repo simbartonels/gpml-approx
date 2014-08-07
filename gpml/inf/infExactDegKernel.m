@@ -13,7 +13,7 @@ if ~strcmp(cov1,'covDegenerate'); error('Only covDegenerate supported.'), end   
 
  
 [n, D] = size(x);
-if size(hyp.weight_prior, 2) > 1; error('Weight prior must be vector!'); end
+if size(hyp.weight_prior, 2) > 1; error('Weight prior must be column vector!'); end
 SigmaInv = diag(1./hyp.weight_prior);
 sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
 Phi = feval(basis_funcs{:}, hyp.cov, NaN, x);

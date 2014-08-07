@@ -1,4 +1,4 @@
-function K = covSSnaive(hyp, x, z, i)
+function K = covSSnaive(S, hyp, x, z, i)
 
 % Squared Exponential covariance function with Automatic Relevance Detemination
 % (ARD) distance measure. The covariance function is parameterized as:
@@ -19,14 +19,15 @@ function K = covSSnaive(hyp, x, z, i)
 %
 % See also COVFUNCTIONS.M.
 
-if nargin<2, K = '(m*D+1)'; return; end              % report number of parameters
-if nargin<3, z = []; end                                   % make sure, z exists
+if nargin<3, K = '(2)'; return; end              % report number of parameters
+if nargin<4, z = []; end                                   % make sure, z exists
 xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 
 [n,D] = size(x);
-m = (length(hyp)-1)/D;
-w = 2*pi*reshape(hyp(1:m*D), [m, D])                                 %frequencies
-sf2 = exp(2*hyp(m*D+1));                                         % signal variance
+m = size(S, 1);
+w = 2*pi*S;      %frequencies
+ell = exp(hyp(1));
+sf2 = exp(2*hyp(2));                                         % signal variance
 
 % precompute squared distances
 if dg                                                               % vector kxx
@@ -69,6 +70,6 @@ else
   end
 end
 K = sf2*K;                                                  % covariance
-if nargin>3                                                        % derivatives
+if nargin>5                                                        % derivatives
     error('Optimization of hyperparameters not implemented.')
 end

@@ -21,6 +21,8 @@ function K = degHSM(a, b, hyp, z, i)
 
 if nargin<3, K = '(1)'; return; end              % report number of parameters
 [sz, D] = size(z);
+%TODO: Covariance function needs as hyper-parameter lenghscale and
+%amplitude. m MUST NOT be a hyperparameter!
 m = hyp(1);
 %j = 1:m;
 %phij = pi*sum((z-repmat(a, 1, sz)')./repmat(b-a, 1, sz)', 2);
