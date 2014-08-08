@@ -16,6 +16,7 @@ if ~strcmp(cov1,'covDegenerate'); error('Only covDegenerate supported.'), end   
 if size(hyp.weight_prior, 2) > 1; error('Weight prior must be column vector!'); end
 SigmaInv = diag(1./hyp.weight_prior);
 sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
+%by convention the third argument is NaN. See covDegenerate.m
 Phi = feval(basis_funcs{:}, hyp.cov, NaN, x);
 if size(Phi, 1) > n; error('The feature space dimensionality is greater than the number of inputs!'); end
 A = 1/sn2*(Phi*Phi')+SigmaInv;                      % evaluate covariance matrix

@@ -14,6 +14,7 @@ else
   if xeqz                                                 % symmetric matrix Kxx
     error('Degenerate covariance functions are not meant to compute kernel matrices!');
   else
+    %ignore x
     K = feval(bf{:}, hyp, z);
   end
 end                                                 % covariance
