@@ -1,5 +1,8 @@
 function K = covDegenerate(bf, hyp, x, z, i)
-
+% Wrapper for basis functions.
+% Basis functions are supposed are called feval(bf{:}, hyp, z); and must
+% return an m x n matrix where n = size(z, 1) and m the
+% number of basis functions.
 if nargin<2, K = feval(bf{:}); return; end              % report number of parameters
 if nargin<3, z = []; end                                   % make sure, z exists
 xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode

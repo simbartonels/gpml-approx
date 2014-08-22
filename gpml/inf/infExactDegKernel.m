@@ -1,4 +1,4 @@
-function [post nlZ dnlZ] = infExactDegKernel(hyp, mean, basis_funcs, lik, x, y)
+function [post nlZ dnlZ] = infExactDegKernel(hyp, mean, degCov, lik, x, y)
 
 % Exact inference for a GP with Gaussian likelihood with a degenerate
 % kernel k(x,y)=psi(x)*psi(y). The implementation follows "Gaussian
@@ -8,7 +8,7 @@ likstr = lik; if ~ischar(lik), likstr = func2str(lik); end
 if ~strcmp(likstr,'likGauss')               % NOTE: no explicit call to likGauss
   error('Exact inference only possible with Gaussian likelihood');
 end
-cov1 = basis_funcs{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
+cov1 = degCov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
 if ~strcmp(cov1,'covDegenerate'); error('Only covDegenerate supported.'), end    % check cov
 
  
@@ -17,7 +17,7 @@ if size(hyp.weight_prior, 2) > 1; error('Weight prior must be column vector!'); 
 SigmaInv = diag(1./hyp.weight_prior);
 sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
 %by convention the third argument is NaN. See covDegenerate.m
-Phi = feval(basis_funcs{:}, hyp.cov, NaN, x);
+Phi = feval(degCov{:}, hyp.cov, NaN, x);
 if size(Phi, 1) > n; error('The feature space dimensionality is greater than the number of inputs!'); end
 A = 1/sn2*(Phi*Phi')+SigmaInv;                      % evaluate covariance matrix
 L = chol(A);
