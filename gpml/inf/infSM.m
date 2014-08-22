@@ -1,10 +1,8 @@
 function [post nlZ dnlZ] = infSM(hyp, mean, cov, lik, x, y)
 
-% Exact inference for a GP with Gaussian likelihood. Compute a parametrization
-% of the posterior, the negative log marginal likelihood and its derivatives
-% w.r.t. the hyperparameters. See also "help infMethods".
+% Exact inference for a GP using Sparse Multiscale approximation.
 %
-% Copyright (c) by Carl Edward Rasmussen and Hannes Nickisch, 2010-12-22
+% ATTENTION: The length scales affect the signal variance!
 %
 % See also INFMETHODS.M.
 likstr = lik; if ~ischar(lik), likstr = func2str(lik); end 
@@ -19,8 +17,12 @@ M = hyp.M;
 logll = hyp.cov(1:D);                               % characteristic length scale
 lsf2 = hyp.cov(2*M*D+D+1);
 sf2 = exp(2*lsf2);
+%Walder uses a slightly different ARD SE where the sigmas influence the 
+%length scale 
+actlsf2 = lsf2-(log(2*pi)*D+sum(logll))/2;
 sigma = hyp.cov(D+1:M*D+D);
 sigma = reshape(sigma, [M, D]);
+logP = -(D*log(2*pi)+sum(sigma, 2))/2;
 V = hyp.cov(M*D+D+1:2*M*D+D);
 V = reshape(V, [M, D]);
 m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
@@ -30,31 +32,22 @@ sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
 %TODO: write in a more efficient way
 Upsi = zeros(M, M);
 Uvx = zeros(M, n);
-%Uvv = zeros(m, m);
 for i=1:M
    for j = 1:M
-       %Upsi(i, j) = covSEard([sigma(i, :)+sigma(j, :)-ell', 0], v(i, :), v(j, :));
-       %Upsi(i, j) = covSEard([sigma(i, :).*sigma(j, :)./ell', 0], v(i, :), v(j, :));
        temp = log(exp(sigma(i, :))+exp(sigma(j, :))-exp(logll'));
-       Upsi(i, j) = covSEard([temp, 0], V(i, :), V(j, :));
-       %Uvv(i, j) = covSEard([sigma(i, :), 0], v(j, :), v(i, :));
+       Upsi(i, j) = covSEard([temp, -(log(2*pi)*D+sum(temp))/2], V(i, :), V(j, :));
    end
    for j = 1:n
-       Uvx(i, j) = covSEard([sigma(i, :), 0], x(j, :), V(i, :));
+       Uvx(i, j) = covSEard([sigma(i, :), logP(i)], x(j, :), V(i, :));
    end
 end
 Upsi = Upsi / sf2;
 Lpsi = chol(Upsi);
-%lambda = zeros(m, 1);
 lambda = zeros(n, 1);
-%TODO: is this equivalent to lambda(1:m) = Uvv(:, 1:m)' * Lpsi\Uvv(:, 1:m);
-%for i=1:m
-    %lambda(i) = Uvv(:, i)' * solve_chol(Lpsi, Uvv(:, i));
 for i=1:n
     lambda(i) = Uvx(:, i)' * solve_chol(Lpsi, Uvx(:, i));
 end
-lambda = covSEard([logll; lsf2], x, 'diag') - lambda;
-%LambdaSnInv = diag(1./(covSEard(hyp.cov, v, 'diag') - lambda + sn2));
+lambda = covSEard([logll; actlsf2], x, 'diag') - lambda;
 LambdaSnInv = diag(1./(lambda + sn2));
 %clear lambda
 Q = Upsi + Uvx * LambdaSnInv * Uvx';
@@ -103,6 +96,23 @@ if nargout>1                               % do we want the marginal likelihood?
 %     phi = phi/2;
 %     phi - nlZ
     if nargout>2                                         % do we want derivatives?
-        error('Derivatives not implemented yet!');    
+        %error('Derivatives not implemented yet!');    
+        %lengthscale derivatives
+        if i <= M*D+D
+            if i > D
+                %optimize the length scales of each basis functions
+                
+                %TODO: could this be easier with logical indices?
+                %which dimension the parameter belongs to
+                d = mod(i, D);
+                %the corresponding basis vector
+                j = (i-D-d)/M;
+                dUvx = zeros([n, 1]);
+                for k = 1:n
+                    dUvx(k) = ((V(j, d) - x(k, d))^2/hyp.cov(i)^2 ... 
+                        - 1/hyp.cov(i))/2*Uvx(j, k);
+                end
+            end
+        end
     end
 end

@@ -26,23 +26,23 @@ xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 [n,D] = size(x);
 %TODO: make sure basis points have same dimension as x
 %TODO: make somehow sure basis points are the same as in infSM
-%logll = hyp(1:D);                               % characteristic length scale
-sf2 = exp(2*hyp(2*M*D+D+1));
-sigma = hyp(D+1:M*D+D);
-sigma = reshape(sigma, [M, D]);
-V = hyp(M*D+D+1:2*M*D+D);
-V = reshape(V, [M, D]);                                       % signal variance
-% precompute squared distances
+logll = hyp(1:D);                               % characteristic length scale
+actsf2 = exp(2*(hyp(2*M*D+D+1)-(log(2*pi)*D+sum(logll))/2));
 if dg                                                               % vector kxx
-  K = sf2*ones(size(x,1),1);
+  K = actsf2*ones(n ,1);
 else
   if xeqz                                                 % symmetric matrix Kxx
     error('This covariance function is not meant to be used to compute covariance matrices!')
   else                                                   % cross covariances Kxz
     K = zeros(M, size(z, 1));
+    sigma = hyp(D+1:M*D+D);
+    sigma = reshape(sigma, [M, D]);
+    logP = -(D*log(2*pi)+sum(sigma, 2))/2;
+    V = hyp(M*D+D+1:2*M*D+D);
+    V = reshape(V, [M, D]);
     %TODO: make this more efficient
-    for i=1:M
-        K(i, :) = covSEard([sigma(i, :), 0], z, V(i, :));
+    for j=1:M
+        K(j, :) = covSEard([sigma(j, :), logP(j)], z, V(j, :));
     end
   end
 end
