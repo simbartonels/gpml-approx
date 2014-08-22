@@ -1,22 +1,35 @@
-D = 2;
-m = 3;
-n = 2*m.^D;
-z = 5;
+D = 16;
+m = 64;
+n = 1; %m*D+1;
+z = 1;
 
-ls = exp(randn(1));
-noise = exp(randn(1));
-sf2 = exp(randn(1));
+ls = 1; %exp(randn(1));
+noise = 1; %exp(randn(1));
+sf2 = 1; %exp(randn(1));
 
-x = randn(n, D);
-y = randn(n, 1);
-xs = randn(2, D);
+x = rand(n, D) / 2;
+y = randn(size(x, 1), 1);
+xs = rand(z, D);
 hyp.lik = log(noise)/2;
 hyp.cov = [log(ls); log(sf2)/2];
 
-hyp.weight_prior = sf2*ones(2*m, 1)/m;
+d = 2^nextpow2(D);
+hyp.weight_prior = sf2*ones(2*m*d, 1)/(m*d);
 [s, gpi, b] = initFastFood(m, D, hyp.cov);
 cov_deg = {@covDegenerate, {@degFastFood, s, gpi, b}};
-covSEiso(hyp.cov, x, 'diag') - feval(cov_deg{:}, hyp.cov, x, 'diag')
+phi = feval(cov_deg{:}, hyp.cov, NaN, x);
+phiz = feval(cov_deg{:}, hyp.cov, NaN, xs);
+K = phi' * diag(hyp.weight_prior) * phiz
+covSEiso(hyp.cov, x, xs)
+sum(sum(abs((covSEiso(hyp.cov, x, xs) - K).^2))/(n*z))
+
+s = ones([m*d, 1]) / sqrt(d*ls);
+cov_deg = {@covDegenerate, {@degFastFood, s, gpi, b}};
+phi = feval(cov_deg{:}, hyp.cov, NaN, x);
+phiz = feval(cov_deg{:}, hyp.cov, NaN, xs);
+K = phi' * diag(hyp.weight_prior) * phiz
+sum(sum(abs((covSEiso(hyp.cov, x, xs) - K).^2))/(n*z))
+
 %covSEiso(hyp.cov, x, xs) - 
-feval(cov_deg{:}, hyp.cov, x, xs)
+%feval(cov_deg{:}, hyp.cov, x, xs)
 %[ymuE ys2E fmuE fs2E] = gp(hyp, @infExactDegKernel, [], cov_deg, @likGauss, x, y, xs)
