@@ -15,15 +15,18 @@ cov1 = cov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
 if ~strcmp(cov1,'covSM'); error('Only covSM supported.'), end    % check cov
 
 [n, D] = size(x);
-v = hyp.v;
-if ~(size(v, 2) == D); error('Training data and basis vectors must have same dimenion!'), end
-M = size(v, 1);
+M = hyp.M;
+logll = hyp.cov(1:D);                               % characteristic length scale
+lsf2 = hyp.cov(2*M*D+D+1);
+sf2 = exp(2*lsf2);
+sigma = hyp.cov(D+1:M*D+D);
+sigma = reshape(sigma, [M, D]);
+V = hyp.cov(M*D+D+1:2*M*D+D);
+V = reshape(V, [M, D]);
 m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
-sigma = hyp.logsigma; %exp(hyp.logsigma);
-if ~(size(sigma) == size(v)); error('There must be one length-scale vector for basis vector with the same dimensionality!'), end
-ell = hyp.cov(1:D);%exp(hyp.cov(1:D));
+if ~(size(sigma) == size(V)); error('There must be one length-scale vector for basis vector with the same dimensionality!'), end
 sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
-lsf2 = hyp.cov(D+1);
+
 %TODO: write in a more efficient way
 Upsi = zeros(M, M);
 Uvx = zeros(M, n);
@@ -32,15 +35,15 @@ for i=1:M
    for j = 1:M
        %Upsi(i, j) = covSEard([sigma(i, :)+sigma(j, :)-ell', 0], v(i, :), v(j, :));
        %Upsi(i, j) = covSEard([sigma(i, :).*sigma(j, :)./ell', 0], v(i, :), v(j, :));
-       temp = log(exp(sigma(i, :))+exp(sigma(j, :))-exp(ell'));
-       Upsi(i, j) = covSEard([temp, 0], v(i, :), v(j, :));
+       temp = log(exp(sigma(i, :))+exp(sigma(j, :))-exp(logll'));
+       Upsi(i, j) = covSEard([temp, 0], V(i, :), V(j, :));
        %Uvv(i, j) = covSEard([sigma(i, :), 0], v(j, :), v(i, :));
    end
    for j = 1:n
-       Uvx(i, j) = covSEard([sigma(i, :), 0], x(j, :), v(i, :));
+       Uvx(i, j) = covSEard([sigma(i, :), 0], x(j, :), V(i, :));
    end
 end
-Upsi = Upsi / exp(2*lsf2);
+Upsi = Upsi / sf2;
 Lpsi = chol(Upsi);
 %lambda = zeros(m, 1);
 lambda = zeros(n, 1);
@@ -50,7 +53,7 @@ lambda = zeros(n, 1);
 for i=1:n
     lambda(i) = Uvx(:, i)' * solve_chol(Lpsi, Uvx(:, i));
 end
-lambda = covSEard(hyp.cov, x, 'diag') - lambda;
+lambda = covSEard([logll; lsf2], x, 'diag') - lambda;
 %LambdaSnInv = diag(1./(covSEard(hyp.cov, v, 'diag') - lambda + sn2));
 LambdaSnInv = diag(1./(lambda + sn2));
 %clear lambda
@@ -79,9 +82,9 @@ if nargout>1                               % do we want the marginal likelihood?
     % this is what Walder proposed
     gamma = lambda./sn2+ones(n, 1);
     %need to solve for the transpose of Lpsi due to solve_chol
-    V = Lpsi'\Uvx;
-    S = chol(sn2*eye(M)+V*diag(1./gamma)*V');
-    beta = S'\(V*((y-m)./gamma));
+    Vvx = Lpsi'\Uvx;
+    S = chol(sn2*eye(M)+Vvx*diag(1./gamma)*Vvx');
+    beta = S'\(Vvx*((y-m)./gamma));
     
     p = n; %?
     q = M; %?

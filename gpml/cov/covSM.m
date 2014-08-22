@@ -1,4 +1,4 @@
-function K = covSM(v, logsigma, hyp, x, z, i)
+function K = covSM(M, hyp, x, z, i)
 
 % Squared Exponential covariance function with Automatic Relevance Detemination
 % (ARD) distance measure. The covariance function is parameterized as:
@@ -19,16 +19,19 @@ function K = covSM(v, logsigma, hyp, x, z, i)
 %
 % See also COVFUNCTIONS.M.
 
-if nargin<4, K = covSEard(); return; end              % report number of parameters
-if nargin<5, z = []; end                                   % make sure, z exists
+if nargin<2, K = sprintf('(2*%d*D+D+1)', M); return; end % report number of parameters
+if nargin<3, z = []; end                                   % make sure, z exists
 xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 
 [n,D] = size(x);
 %TODO: make sure basis points have same dimension as x
 %TODO: make somehow sure basis points are the same as in infSM
-m = size(v, 1);
-sigma = logsigma; %exp(logsigma);
-sf2 = exp(2*hyp(D+1));                                         % signal variance
+%logll = hyp(1:D);                               % characteristic length scale
+sf2 = exp(2*hyp(2*M*D+D+1));
+sigma = hyp(D+1:M*D+D);
+sigma = reshape(sigma, [M, D]);
+V = hyp(M*D+D+1:2*M*D+D);
+V = reshape(V, [M, D]);                                       % signal variance
 % precompute squared distances
 if dg                                                               % vector kxx
   K = sf2*ones(size(x,1),1);
@@ -36,13 +39,14 @@ else
   if xeqz                                                 % symmetric matrix Kxx
     error('This covariance function is not meant to be used to compute covariance matrices!')
   else                                                   % cross covariances Kxz
-    K = zeros(m, size(z, 1));
+    K = zeros(M, size(z, 1));
     %TODO: make this more efficient
-    for i=1:m
-        K(i, :) = covSEard([sigma(i, :), 0], z, v(i, :));
+    for i=1:M
+        K(i, :) = covSEard([sigma(i, :), 0], z, V(i, :));
     end
   end
-end                                             % covariance
-if nargin>5                                                   % derivatives
+end
+if nargin>4                                                   % derivatives
     error('Optimization of hyperparameters not implemented.')
+    
 end
