@@ -21,5 +21,6 @@ addpath([mydir,'mean'])
 addpath([mydir,'util'])
 addpath([mydir,'test'])
 addpath([mydir, 'deg_cov'])
+addpath([mydir, 'deg_cov\\init'])
 
 clear me mydir
