@@ -28,9 +28,10 @@ xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 %TODO: make somehow sure basis points are the same as in infSM
 m = size(v, 1);
 sigma = logsigma; %exp(logsigma);
+sf2 = exp(2*hyp(D+1));                                         % signal variance
 % precompute squared distances
 if dg                                                               % vector kxx
-  K = covSEard(hyp, x, 'diag');
+  K = sf2*ones(size(x,1),1);
 else
   if xeqz                                                 % symmetric matrix Kxx
     error('This covariance function is not meant to be used to compute covariance matrices!')
