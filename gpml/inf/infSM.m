@@ -23,47 +23,41 @@ actlsf2 = lsf2-(log(2*pi)*D+sum(logll))/2;
 sigma = hyp.cov(D+1:M*D+D);
 sigma = reshape(sigma, [M, D]);
 logP = -(D*log(2*pi)+sum(sigma, 2))/2;
+logP = logP/2; %since ARDse expects the square root
+
 V = hyp.cov(M*D+D+1:2*M*D+D);
 V = reshape(V, [M, D]);
 m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
 if ~(size(sigma) == size(V)); error('There must be one length-scale vector for basis vector with the same dimensionality!'), end
 sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
 
-%TODO: write in a more efficient way
-Upsi = zeros(M, M);
-Uvx = zeros(M, n);
-for i=1:M
-   for j = 1:M
-       temp = log(exp(sigma(i, :))+exp(sigma(j, :))-exp(logll'));
-       Upsi(i, j) = covSEard([temp, -(log(2*pi)*D+sum(temp))/2], V(i, :), V(j, :));
-   end
-   for j = 1:n
-       Uvx(i, j) = covSEard([sigma(i, :), logP(i)], x(j, :), V(i, :));
-   end
-end
-Upsi = Upsi / sf2;
+[K, Upsi, Uvx] = covSM(M, hyp.cov, x);
 Lpsi = chol(Upsi);
 lambda = zeros(n, 1);
 for i=1:n
     lambda(i) = Uvx(:, i)' * solve_chol(Lpsi, Uvx(:, i));
 end
-lambda = covSEard([logll; actlsf2], x, 'diag') - lambda;
+lambda = K - lambda;
+%TODO: is it really necessary to create the diagonal? if it is always
+%multiplied with a vector it is not necessary!
 LambdaSnInv = diag(1./(lambda + sn2));
 %clear lambda
 Q = Upsi + Uvx * LambdaSnInv * Uvx';
 LQ = chol(Q);
-%TODO: make this more efficient
-%maybe it is possible to use the alternative parameterization in infExact!
+
 %return -Upsi^- + Q^-
-%post.L = chol(solve_chol(chol(solve_chol(Lpsi, eye(M)) - solve_chol(LQ, eye(M))), eye(M)));
-post.L = chol(solve_chol(chol(solve_chol(Lpsi, eye(M)) - solve_chol(LQ, eye(M))), eye(M))/sn2);
-%post.L is the cholesky of the inverse of (Upsi^-1 - Q^-1)
+%solvedTODO: make this more efficient
+%post.L = chol(solve_chol(chol(solve_chol(Lpsi, eye(M)) - solve_chol(LQ, eye(M))), eye(M))/sn2);
+%infFITC does something like the following!
+post.L = -solve_chol(Lpsi, eye(M)) + solve_chol(LQ, eye(M));
+
+
 clear Q
 clear Upsi
 mean_vec = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
-post.alpha = solve_chol(LQ, Uvx * LambdaSnInv * (y - mean_vec));
+post.alpha = solve_chol(LQ, Uvx * (LambdaSnInv * (y - mean_vec)));
 post.sW = ones(M,1)/sqrt(sn2);                  % sqrt of noise precision vector
-
+%post.sW = [];
 clear LambdSnInv
 %clear Lpsi
 clear LQ
@@ -83,9 +77,11 @@ if nargout>1                               % do we want the marginal likelihood?
     q = M; %?
     nlZ = log(prod(gamma))+log(prod(diag(S).^2))+(p-q)*log(sn2)+...
         ((y-m)'*((y-m)./gamma)-beta'*beta)/sn2;
+    %nlZ = sum(log(gamma))+sum(2*log(diag(S)))+(p-q)*log(sn2)+...
+    %    ((y-m)'*((y-m)./gamma)-beta'*beta)/sn2;
     %nlZ = nlZ + M*log(2*pi);
     nlZ = nlZ + n*log(2*pi);
-    nlZ=nlZ/2;
+    nlZ = nlZ/2;
     
     %this is what Walder wrote as psi
 %     K = Uvx'*solve_chol(Lpsi, Uvx)+diag(lambda);
@@ -98,21 +94,9 @@ if nargout>1                               % do we want the marginal likelihood?
     if nargout>2                                         % do we want derivatives?
         %error('Derivatives not implemented yet!');    
         %lengthscale derivatives
-        if i <= M*D+D
-            if i > D
+        for i = D:M*D+D
                 %optimize the length scales of each basis functions
                 
-                %TODO: could this be easier with logical indices?
-                %which dimension the parameter belongs to
-                d = mod(i, D);
-                %the corresponding basis vector
-                j = (i-D-d)/M;
-                dUvx = zeros([n, 1]);
-                for k = 1:n
-                    dUvx(k) = ((V(j, d) - x(k, d))^2/hyp.cov(i)^2 ... 
-                        - 1/hyp.cov(i))/2*Uvx(j, k);
-                end
-            end
         end
     end
 end

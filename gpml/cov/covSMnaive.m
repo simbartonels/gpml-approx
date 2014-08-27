@@ -29,54 +29,31 @@ xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 [n,D] = size(x);                                       % signal variance
 sz = size(z, 1);
 logll = hyp(1:D);                               % characteristic length scale
-lsf2 = hyp(2*M*D+D+1);
+lsf = hyp(2*M*D+D+1);
 %Walder uses a slightly different ARD SE where the sigmas influence the 
 %length scale 
-actlsf2 = lsf2-(log(2*pi)*D+sum(logll))/2;
+%TODO: is this signal variance correct? I have the feeling the negative part
+%needs to be divided once more by two since ARDse expects the square root 
+%signal variance
+%actlsf2 = lsf2-(log(2*pi)*D+sum(logll))/2;
+actlsf2 = lsf-(log(2*pi)*D+sum(logll)*2)/4;
 if dg                                                               % vector kxx
     K = covSEard([logll; actlsf2], x, 'diag');
 else
-    %set length scales for each basis function
-    S = hyp(D+1:M*D+D);
-    S = reshape(S, [M, D]);
-    %P = 1/sqrt(prod(2*pi*exp(S), 2))
-    %log(P) = -log(prod(2*pi*exp(S), 2))/2
-    % = -log((2*pi)^D*prod(exp(S), 2))/2
-    % = -(D*log(2*pi)+sum(S, 2))/2
-    logP = -(D*log(2*pi)+sum(S, 2))/2;
-    %set inducing points
-    V = hyp(M*D+D+1:2*M*D+D);
-    V = reshape(V, [M, D]);
-    Upsi = zeros(M, M);
-    Uvx = zeros(M, n);
-    %do we need Uvz?
-    if ~xeqz
-        Uvz = zeros(M, sz);
-    end
-    for i=1:M
-       for j = 1:M
-           temp = log(exp(S(i, :))+exp(S(j, :))-exp(logll'));
-           Upsi(i, j) = covSEard([temp, -(log(2*pi)*D+sum(temp))/2], V(i, :), V(j, :));
-       end
-       for j = 1:n
-           Uvx(i, j) = covSEard([S(i, :), logP(i)], x(j, :), V(i, :));
-       end
-       if ~xeqz
-            %we need Uvz...
-           for j = 1:sz
-              Uvz(i, j) = covSEard([S(i, :), logP(i)], z(j, :), V(i, :));
-           end
-       end
-    end
-    Upsi = Upsi / exp(2*lsf2);
+    [~, Upsi, Uvx] = covSM(M, hyp, x);
     Lpsi = chol(Upsi);
     clear Upsi;
-    if xeqz, Uvz = Uvx; end
-    K = Uvx'*solve_chol(Lpsi, Uvz);
-    %set diagonal to what Walder's ARD SE would produce
-    if xeqz
+    if xeqz, 
+        %K2 = Uvx'*solve_chol(Lpsi, Uvx);
+        %this is to ensure that K is positive definite
+        K = Lpsi'\Uvx;
+        K = K'*K;
+        %set diagonal to what Walder's ARD SE would produce
         K(logical(eye(size(K)))) = 0;
         K = K + diag(covSEard([logll; actlsf2], x, 'diag')); 
+    else
+        Uvz = covSM(M, hyp, x, z);
+        K = Uvx'*solve_chol(Lpsi, Uvz);
     end
 end
 
