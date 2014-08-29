@@ -39,14 +39,15 @@ for m=M/4:M/4:M
     
     %TODO: Unfortunately the kernel is NOT a product kernel.
     %=> code below works only for D=1
-    cov = cell(D, 1);
-    for d = 1:D
-        sqrtlambda = pi*j/(b(d)-a(d));
-        s = S5(sqrtlambda);
-        cov(d) = {{@covHSMnaive, s, a(1, d), b(1, d), d}};
+    if D==1
+        cov = cell(D, 1);
+        for d = 1:D
+            sqrtlambda = pi*j/(b(d)-a(d));
+            s = S5(sqrtlambda);
+            cov(d) = {{@covHSMnaive, s, a(1, d), b(1, d), d}};
+        end
+        varargout1 = gp(hyp1, @infExact, [], {@covProd, cov}, @likGauss, x, y, xs)
     end
-    varargout1 = gp(hyp1, @infExact, [], {@covProd, cov}, @likGauss, x, y, xs)
-    
     %TODO: this is wrong. j needs to be part of the sum!
     %sqrtlambda = pi*j/sqrt(sum((b-a)).^2);
     %create index matrix
