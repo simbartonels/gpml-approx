@@ -8,17 +8,34 @@ function [s, gpi, b] = initFastFood(m, D, hyp)
     ell = exp(hyp(1));                                 % characteristic length scale
     sf2 = exp(2*hyp(2));                               % signal variance
     
+%     r = randn([m*D, 1]);%*ell; %TODO: plus something with ell and 2pi
+%     A = 2*pi^(D/2)/factorial(D/2);
+%     s = r.^(D-1).*exp(-r.^2/2)/(A*sqrt((2*pi)^D));
+%     s = r.^(D-1).*exp(-r.^2/2);
+    s = zeros([m*D, 1]);
     b = 2*(randi([0 1], [m*D,1])-0.5);
-    randpi = randperm(m*D);
+    randpi = zeros([m*D, 1]);
+    for j = 1:m
+        randpi((1+D*(j-1)):D*j) = randperm(D);
+        for d = 1:D
+            for l = 1:D
+                s(D*(j-1)+d) = s(D*(j-1)+d)+randn(1)^2;
+            end
+        end
+    end
+    s = sqrt(s);
     g = randn([m*D, 1]);
     gpi = g.*randpi(:);
-    r = randn(1, m)*ell; %TODO: plus something with ell and 2pi
-    A = pi^(D/2)/factorial(D/2);
-    s = r.^(D-1).*exp(-r.^2/2)/(A*sqrt((2*pi)^D));
-    no = zeros(1, m);
+    %no = zeros(1, m);
     for j = 1:m
-        no(j) = sqrt(norm(gpi((1+D*(j-1)):D*j, 1), 'fro'));
+        idx = (1+D*(j-1)):D*j;
+        no = norm(gpi(idx, 1), 'fro');
+        %TODO: could be a typo
+        %no = sqrt(no);
+        s(idx)=s(idx)/no;
     end
-    s = reshape(repmat(s./no, D, 1), [m*D, 1]);
-    s = s/sqrt(D*ell); %the factor from equation (7)
+    %s = reshape(repmat(s./no, D, 1), [m*D, 1]);
+    %the factor from equation (7)
+    %ell is already a square root
+    s = s/(sqrt(D)*ell); 
 end

@@ -19,8 +19,9 @@ sf2 = exp(2*hyp(2));                               % signal variance%j = 1:m;
 W = zeros(mD, sz);
 for j = 1:m
     idx = (1+(j-1)*D):(j*D);
-    w = fwht(diag(b(idx))*z');
-    w = fwht(diag(gpi(idx))*w);
+    %it appears the hadamard transform in matlab is scaled
+    w = fwht(diag(b(idx))*z', D, 'hadamard')*D;
+    w = fwht(diag(gpi(idx))*w, D, 'hadamard')*D;
     W(idx, :) = diag(s(idx))*w;
 end
 % W2 = W;
@@ -29,7 +30,7 @@ end
 % W = diag(s) * W;
 % W2 - W
 K = [cos(W); sin(W)];
-
+%K = exp(1i * W);
 if nargin>5                                              % derivatives
     error('Optimization of hyperparameters not implemented.')
 end
