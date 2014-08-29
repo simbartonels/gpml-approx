@@ -29,8 +29,6 @@ xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 logll = hyp(1:D);                               % characteristic length scale
 lsf = hyp(2*M*D+D+1);
 sf2 = exp(2*lsf);
-%TODO: does the factor of 2 really apply to the negative part???
-%actsf2 = exp(2*(hyp(2*M*D+D+1)-(log(2*pi)*D+sum(logll))/2));
 actsf2 = exp(2*computeLogRootSignalVariance(lsf, logll'));
 if dg                                                               % vector kxx
     K = actsf2*ones(n ,1);
