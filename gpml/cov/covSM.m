@@ -35,6 +35,19 @@ if dg                                                               % vector kxx
 else
     sigma = hyp(D+1:M*D+D);
     sigma = reshape(sigma, [M, D]);
+    if any(exp(2*sigma) < repmat(exp(2*logll')/2, [M, 1]))
+        disp('All inducing input length scales must be longer than half the corresponding length scale!');
+        error('All inducing input length scales must be longer than half the corresponding length scale!');
+        K = zeros([n, 1]);
+        Upsi = eye(M);
+        Uvx = zeros([M, n]);
+        if nargin > 4
+            % gradients are all 0
+            Upsi = zeros([M, M]);
+        end
+        return
+    end
+
     logP = computeLogRootSignalVariance(0, sigma);
 
     V = hyp(M*D+D+1:2*M*D+D);
@@ -66,37 +79,52 @@ else
 end
 if nargin>4                                                   % derivatives
     if dg
-        error('Not implemented yet!');
-        %K = feval(cov{:},hyp,x,'diag',i);
+        K = dKd(K, di, D, M);
     else
         if xeqz
-            %K   = feval(cov{:},hyp,x,'diag',i);
-            %Kuu = feval(cov{:},hyp,xu,[],i);
-            %Ku  = feval(cov{:},hyp,xu,x,i);
-            
+            K = dKd(K, di, D, M);
             %lengthscale derivatives?
-            if di >= D+1 && di <= M*D+D
-                %TODO: could this be easier with logical indices?
-                % the corresponding inducing point
-                j = mod(di-D-1, M)+1;
-                % which dimension the parameter belongs to
-                d = (di-D-j)/M+1;
-                dUvx = zeros([n, 1]);
-                % the parameter
-                p = exp(2*hyp(di));
-                for k = 1:n
-                     dUvx(k) = (((V(j, d) - x(k, d))/p).^2 ... 
-                        - 1/p)* Uvx(j, k)/2;
-                    %need to apply chain rule since the parameter is optimized
-                    %on a log scale and a square root
-                    dUvx(k) = dUvx(k) * 2 * p;
+            if di <= D
+                Uvx = zeros(size(Uvx));
+                
+                d = di;
+                p2 = exp(2*logll(d));
+                for k=1:M
+                    for l=1:M
+                        p = exp(2*sigma(k, d))+exp(2*sigma(l, d))-p2;
+                        u = ((V(k, d) - V(l, d))/p)^2-1/p;
+                        u = u * Upsi(k, l)/2;
+                        % chain rule
+                        u = 2 * (-p2) * u;
+                        Upsi(k, l) = u;
+                    end
                 end
+            elseif di >= D+1 && di <= M*D+D
+                %TODO: could this be easier with logical indices?
+                [d, j] = getDimensionAndInducingPoint(di, D, M);
+                Uvx = dUdl(Uvx, hyp(di), d, j, x, V);
+                
+                p2 = exp(2*sigma(j, d));
+                p = p2+exp(2*sigma(:, d))-exp(2*logll(d));
+                dUpsi = dAdl(Upsi, p, d, V, V, j);
+                % chain rule
+                dUpsi(j, :) = 2 * p2 * dUpsi(j, :);
+                dUpsi(:, j) = dUpsi(j, :);
+                dUpsi(j, j) = 2 * dUpsi(j, j);
+                Upsi = dUpsi;
+            elseif di >= M*D+D+1 && di <=2*M*D+D
+                %inducing point derivatives
+            elseif di == 2*M*D+D+1
+                Uvx = zeros(size(Uvx));
+                %chain rule because sf2 is square root and log 
+                Upsi = -2*Upsi;
             end
-            %TODO: this costs speed! (how much?)
-            Uvx = dUvx;
         else
-            error('Not implemented yet!');
-          %K = feval(cov{:},hyp,xu,z,i);
+            if di >= D+1 && di <= M*D+D
+                [d, j] = getDimensionAndInducingPoint(di, D, M);
+                dUvz = dUdl(Uvz, hyp(di), d, j, z, V);
+                Uvx = dUvz;
+            end
         end
     end
 end
@@ -114,4 +142,53 @@ function lsf2 = computeLogRootSignalVariance(lsf2, logll)
     % with square root length scales.
     D = size(logll, 2);
     lsf2 = lsf2 - (log(2*pi)*D+sum(logll, 2)*2)/4;
+end
+
+function dK = dKd(K, di, D, M)
+        if di <= D
+            %derivatives of the length scales
+            %the chain rule part cancels with the 1/sigma
+            dK = -K;
+        elseif di >=D+1 && di <= 2*M*D+D
+            %derivatives for the inducing points and corresponding length
+            %scales
+            dK = 0;
+        else
+            %derivative of the amplitude
+            dK = 2 * K;
+        end
+end
+
+function dUvx = dUdl(Uvx, logl, d, j, x, V)
+    % DUDL Computes the derivative of Uvx with respect to the inducing
+    % points' length scales.
+    % Uvx: the matrix
+    % logl: log square root length scale
+    % d: the dimension
+    % j: index of the corresponding basis vector
+    % x: input matrix
+    % V: inducing input matrix
+    
+    % the parameter
+    p = exp(2*logl);
+    dUvx = dAdl(Uvx, p, d, x, V, j);
+    % need to apply chain rule since the parameter is optimized
+    % on a log scale and is a square root
+    dUvx = dUvx * 2 * p;
+end
+
+function dA = dAdl(A, p, d, x, z, i)
+    % DADL Computes the derivative of A with respect to length scale
+    % parameter p where [A]ij = g(xj, zi, [Sigma]i) and [Sigma]id=p.
+    
+    %TODO: could this be easier with logical indices?
+    dA = zeros(size(A));
+    dA(i, :) = ((((z(i, d) - x(:, d))./p).^2-1./p))'.*A(i, :)/2;
+end
+
+function [d, j] = getDimensionAndInducingPoint(di, D, M)
+    % the corresponding inducing point
+    j = mod(di-D-1, M)+1;
+    % which dimension the parameter belongs to
+    d = (di-D-j)/M+1;
 end

@@ -13,17 +13,9 @@ cov1 = cov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
 if ~strcmp(cov1,'covSM'); error('Only covSM supported.'), end    % check cov
 
 [n, D] = size(x);
-M = hyp.M;
-logll = hyp.cov(1:D);                               % characteristic length scale
-lsf2 = hyp.cov(2*M*D+D+1);
-sf2 = exp(2*lsf2);
-%Walder uses a slightly different ARD SE where the sigmas influence the 
-%length scale 
-actlsf2 = lsf2-(log(2*pi)*D+sum(logll))/2;
+M = cell2mat(cov(2));
 sigma = hyp.cov(D+1:M*D+D);
 sigma = reshape(sigma, [M, D]);
-logP = -(D*log(2*pi)+sum(sigma, 2))/2;
-logP = logP/2; %since ARDse expects the square root
 
 V = hyp.cov(M*D+D+1:2*M*D+D);
 V = reshape(V, [M, D]);
