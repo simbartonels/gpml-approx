@@ -119,7 +119,7 @@ V = randn([M, D]);
 logsigma = log(exp(randn([M, D]).^2)+repmat(exp(logell)', M, 1)/2);
 
 smhyp.lik = lsn2;
-smhyp.M = M;
+%smhyp.M = M;
 smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
     reshape(V, [M*D, 1]); lsf2+(log(2*pi)*D+sum(logell)*2)/4];
 [ymu, ys2, fmu, fs2] = gp(smhyp, @infSM, [], {@covSM, M}, @likGauss, x, y, xs);
@@ -132,16 +132,20 @@ nlZ = gp(smhyp, @infSM, [], {@covSM, M}, @likGauss, x, y);
 [ymuS, ys2S, fmuS, fs2S] = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y, xs);
 nlZS = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y);
 dev_impl_and_fitc = [max((ymu-ymuS).^2), max((ys2-ys2S).^2), nlZS - nlZ]
+
+options = optimoptions(@fmincon,'Algorithm','interior-point',...
+    'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);
+optfunc = @(hypx) optimfunc(hypx, smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y);
+%derivative check
+fmincon(optfunc,...
+           unwrap(smhyp),[],[],[],[],[],[],@unitdisk,options);
 end
 
-function [sd, n, D, x, y, xs, logell, lsf2, lsn2] = initEnv()
-sd = floor(rand(1) * 32000)
-n = 5;
-D = 3;
-x = rand(n, D);
-y = randn(n, 1);
-xs = rand(2, D);
-logell = randn(D, 1);
-lsf2 = log(randn(1)^2);
-lsn2 = log(rand(1)^2);
+function [fx, dx] = optimfunc(hypx, hyp0, inf, mean, cov, lik, x, y)
+if nargout > 1
+    [~, fx, dL] = gp(rewrap(hyp0, hypx), inf, mean, cov, lik, x, y);
+    dx = unwrap(dL);
+else
+    [~, fx] = gp(rewrap(hyp0, hypx), inf, mean, cov, lik, x, y);
+end
 end

@@ -54,6 +54,8 @@ else
     V = reshape(V, [M, D]);
     if xeqz                                                 
         K = actsf2*ones(n ,1);
+        
+        ell = exp(2*logll');
         %TODO: write in a more efficient way
         Upsi = zeros(M, M);
         Uvx = zeros(M, n);
@@ -61,7 +63,7 @@ else
            for j = 1:M
                %division and multiplication with 2 because are dealing with
                %square roots.
-               temp = log(exp(2*sigma(i, :))+exp(2*sigma(j, :))-exp(2*logll'))/2;
+               temp = log(exp(2*sigma(i, :))+exp(2*sigma(j, :))-ell)/2;
                Upsi(i, j) = covSEard([temp, computeLogRootSignalVariance(0, temp)], V(i, :), V(j, :));
            end
            for j = 1:n
@@ -100,8 +102,7 @@ if nargin>4                                                   % derivatives
                     end
                 end
             elseif di >= D+1 && di <= M*D+D
-                %TODO: could this be easier with logical indices?
-                [d, j] = getDimensionAndInducingPoint(di, D, M);
+                [d, j] = getDimensionAndIndex(di, D, M);
                 Uvx = dUdl(Uvx, hyp(di), d, j, x, V);
                 
                 p2 = exp(2*sigma(j, d));
@@ -114,16 +115,38 @@ if nargin>4                                                   % derivatives
                 Upsi = dUpsi;
             elseif di >= M*D+D+1 && di <=2*M*D+D
                 %inducing point derivatives
+                [d, j] = getDimensionAndIndex(di, D, M);
+                dUvx = zeros(size(Uvx));
+                sig = exp(2*sigma(j, d));
+                dUvx(j, :) = (-V(j, d) + x(:, d))/sig .* Uvx(j, :)';
+                Uvx = dUvx;
+                
+                dUpsi = zeros(size(Upsi));
+                p2 = exp(2*sigma(j, d));
+                p = p2+exp(2*sigma(:, d))-exp(2*logll(d));
+                dUpsi(j, :) = (-V(j, d) + V(:, d)) .* Upsi(j, :)' ./p;
+                dUpsi(:, j) = dUpsi(j, :);
+                Upsi = dUpsi;
             elseif di == 2*M*D+D+1
                 Uvx = zeros(size(Uvx));
                 %chain rule because sf2 is square root and log 
                 Upsi = -2*Upsi;
             end
         else
-            if di >= D+1 && di <= M*D+D
-                [d, j] = getDimensionAndInducingPoint(di, D, M);
-                dUvz = dUdl(Uvz, hyp(di), d, j, z, V);
-                Uvx = dUvz;
+            if di <= D
+                K = zeros(size(K));
+            elseif di >= D+1 && di <= M*D+D
+                [d, j] = getDimensionAndIndex(di, D, M);
+                K = dUdl(K, hyp(di), d, j, z, V);
+            elseif di >= M*D+D+1 && di <=2*M*D+D
+                %inducing point derivatives
+                [d, j] = getDimensionAndIndex(di, D, M);
+                dUvz = zeros(size(K));
+                sig = exp(2*sigma(j, d));
+                dUvz(j, :) = (-V(j, d) + z(:, d))/sig .* K(j, :)';
+                K = dUvz;
+            elseif di == 2*M*D+D+1
+                K = zeros(size(K));
             end
         end
     end
@@ -186,9 +209,13 @@ function dA = dAdl(A, p, d, x, z, i)
     dA(i, :) = ((((z(i, d) - x(:, d))./p).^2-1./p))'.*A(i, :)/2;
 end
 
-function [d, j] = getDimensionAndInducingPoint(di, D, M)
+function [d, j] = getDimensionAndIndex(di, D, M)
+    % GETDIMENSIONANDINEX Returns the dimension of the parameter and the
+    % index that is between between 1 and M. This works for the inducing
+    % points as well as for the corresponding length scales.
     % the corresponding inducing point
     j = mod(di-D-1, M)+1;
     % which dimension the parameter belongs to
     d = (di-D-j)/M+1;
+    d = mod(d-1, D)+1;
 end
