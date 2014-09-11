@@ -25,7 +25,6 @@ xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 
 [n,D] = size(x);
 %TODO: make sure basis points have same dimension as x
-%TODO: make somehow sure basis points are the same as in infSM
 logll = hyp(1:D);                               % characteristic length scale
 lsf = hyp(2*M*D+D+1);
 sf2 = exp(2*lsf);
@@ -37,7 +36,7 @@ else
     sigma = reshape(sigma, [M, D]);
     if any(exp(2*sigma) < repmat(exp(2*logll')/2, [M, 1]))
         disp('All inducing input length scales must be longer than half the corresponding length scale!');
-        error('All inducing input length scales must be longer than half the corresponding length scale!');
+        %error('All inducing input length scales must be longer than half the corresponding length scale!');
         K = zeros([n, 1]);
         Upsi = eye(M);
         Uvx = zeros([M, n]);
@@ -175,7 +174,7 @@ function dK = dKd(K, di, D, M)
         elseif di >=D+1 && di <= 2*M*D+D
             %derivatives for the inducing points and corresponding length
             %scales
-            dK = 0;
+            dK = zeros(size(K));
         else
             %derivative of the amplitude
             dK = 2 * K;

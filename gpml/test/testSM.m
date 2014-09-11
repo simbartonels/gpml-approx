@@ -136,6 +136,7 @@ dev_impl_and_fitc = [max((ymu-ymuS).^2), max((ys2-ys2S).^2), nlZS - nlZ]
 options = optimoptions(@fmincon,'Algorithm','interior-point',...
     'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);
 optfunc = @(hypx) optimfunc(hypx, smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y);
+
 %derivative check
 fmincon(optfunc,...
            unwrap(smhyp),[],[],[],[],[],[],@unitdisk,options);
@@ -143,9 +144,9 @@ end
 
 function [fx, dx] = optimfunc(hypx, hyp0, inf, mean, cov, lik, x, y)
 if nargout > 1
-    [~, fx, dL] = gp(rewrap(hyp0, hypx), inf, mean, cov, lik, x, y);
+    [fx, dL] = gp(rewrap(hyp0, hypx), inf, mean, cov, lik, x, y);
     dx = unwrap(dL);
 else
-    [~, fx] = gp(rewrap(hyp0, hypx), inf, mean, cov, lik, x, y);
+    fx = gp(rewrap(hyp0, hypx), inf, mean, cov, lik, x, y);
 end
 end
