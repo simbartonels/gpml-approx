@@ -19,14 +19,14 @@ sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
 %by convention the third argument is NaN. See covDegenerate.m
 Phi = feval(degCov{:}, hyp.cov, NaN, x);
 if size(Phi, 1) > n; error('The feature space dimensionality is greater than the number of inputs!'); end
-A = 1/sn2*(Phi*Phi')+SigmaInv;                      % evaluate covariance matrix
+A = (Phi*Phi')+sn2*SigmaInv;                      % evaluate covariance matrix
 L = chol(A);
 clear A;
 m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
 Phiy = Phi*(y-m);
-post.alpha = solve_chol(L, Phiy) / sn2;
-post.L = solve_chol(L, eye(size(L, 1)));%return inverse of A
-post.sW = ones(size(L, 1),1)/sqrt(sn2);                  % sqrt of noise precision vector
+post.alpha = solve_chol(L, Phiy);
+post.L = solve_chol(L, eye(size(L, 1)))*sn2;%return inverse of A
+post.sW = [];
 %clear L;
 
 if nargout>1                               % do we want the marginal likelihood?
@@ -40,8 +40,8 @@ if nargout>1                               % do we want the marginal likelihood?
   %this formula is more efficient using Woodbury formula and determinant
   %lemma
   M = L'\Phiy;
-  nlZ = ((y-m)'*(y-m)-M'*M/sn2)/sn2 +2*sum(log(diag(L))) ...
-      +sum(log(hyp.weight_prior))+n*(log(sn2)+log(2*pi));
+  nlZ = ((y-m)'*(y-m)-M'*M)/sn2 +2*sum(log(diag(L)))...
+      +sum(log(hyp.weight_prior))+n*log(2*pi)+(n-size(L, 1))*log(sn2);
   nlZ = nlZ/2;
   if nargout>2                                         % do we want derivatives?
     
