@@ -44,7 +44,7 @@ if nargout>1                               % do we want the marginal likelihood?
   logdetA = 2*sum(log(diag(L)));
   yyMM = ((y-m)'*(y-m)-M'*M)/sn2;
   nlZ = yyMM + logdetA ...
-      +sum(log(weight_prior))+n*log(2*pi)+(n-size(L, 1))*log(sn2);
+      +sum(log(weight_prior))+n*log(2*pi)+(n-size(L, 1))*(2*hyp.lik);
   nlZ = nlZ/2;
   if nargout>2                                         % do we want derivatives?
     dnlZ = hyp;
@@ -58,10 +58,9 @@ if nargout>1                               % do we want the marginal likelihood?
         dMM = 2*invAPhiy'*dPhi*y - invAPhiy' * dA * invAPhiy;
         dnlZ.cov(i) = (-dMM/sn2 + dlogdetA + dlogdetSigma)/2;
     end
-    sn = exp(hyp.lik);
-    dnlZ.lik = -2*yyMM/sn + ...
-       2*invAPhiy'*SigmaInv*invAPhiy/sn + ...
-       trace(solve_chol(L, 2*sn*SigmaInv)) + 2*(n-size(L, 1))/sn;
+    dnlZ.lik = -2*yyMM + ...
+       2*invAPhiy'*SigmaInv*invAPhiy + ...
+       trace(solve_chol(L, 2*sn2*SigmaInv)) + 2*(n-size(L, 1));
     dnlZ.lik = dnlZ.lik / 2;
     %dnlZ.mean
   end
