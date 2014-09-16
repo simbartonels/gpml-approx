@@ -13,11 +13,12 @@ if ~strcmp(cov1,'covDegenerate'); error('Only covDegenerate supported.'), end   
 
  
 [n, D] = size(x);
-if size(hyp.weight_prior, 2) > 1; error('Weight prior must be column vector!'); end
-SigmaInv = diag(1./hyp.weight_prior);
+weight_prior = feval(degCov{:}, hyp.cov);
+if size(weight_prior, 2) > 1; error('Weight prior must be column vector!'); end
+SigmaInv = diag(1./weight_prior);
 sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
-%by convention the third argument is NaN. See covDegenerate.m
-Phi = feval(degCov{:}, hyp.cov, NaN, x);
+%by convention the third argument is []. See covDegenerate.m
+Phi = feval(degCov{:}, hyp.cov, [], x);
 if size(Phi, 1) > n; error('The feature space dimensionality is greater than the number of inputs!'); end
 A = (Phi*Phi')+sn2*SigmaInv;                      % evaluate covariance matrix
 L = chol(A);
@@ -40,11 +41,28 @@ if nargout>1                               % do we want the marginal likelihood?
   %this formula is more efficient using Woodbury formula and determinant
   %lemma
   M = L'\Phiy;
-  nlZ = ((y-m)'*(y-m)-M'*M)/sn2 +2*sum(log(diag(L)))...
-      +sum(log(hyp.weight_prior))+n*log(2*pi)+(n-size(L, 1))*log(sn2);
+  logdetA = 2*sum(log(diag(L)));
+  yyMM = ((y-m)'*(y-m)-M'*M)/sn2;
+  nlZ = yyMM + logdetA ...
+      +sum(log(weight_prior))+n*log(2*pi)+(n-size(L, 1))*log(sn2);
   nlZ = nlZ/2;
   if nargout>2                                         % do we want derivatives?
-    
-    error('Computing derivatives not supported!');
+    dnlZ = hyp;
+    invAPhiy = L\M;
+    for i = 1:numel(hyp.cov)
+        dSigma = feval(degCov{:}, hyp.cov, [], [], i);
+        dPhi = feval(degCov{:}, hyp.cov, [], x, i);
+        dA = dPhi * Phi' + Phi * dPhi' - sn2 * SigmaInv * diag(dSigma) * SigmaInv; 
+        dlogdetA = trace(solve_chol(L, dA)); % * detA / detA
+        dlogdetSigma = trace(SigmaInv * diag(dSigma));
+        dMM = 2*invAPhiy'*dPhi*y - invAPhiy' * dA * invAPhiy;
+        dnlZ.cov(i) = (-dMM/sn2 + dlogdetA + dlogdetSigma)/2;
+    end
+    sn = exp(hyp.lik);
+    dnlZ.lik = -2*yyMM/sn + ...
+       2*invAPhiy'*SigmaInv*invAPhiy/sn + ...
+       trace(solve_chol(L, 2*sn*SigmaInv)) + 2*(n-size(L, 1))/sn;
+    dnlZ.lik = dnlZ.lik / 2;
+    %dnlZ.mean
   end
 end

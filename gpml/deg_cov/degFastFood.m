@@ -1,4 +1,4 @@
-function K = degFastFood(s, gpi, b, hyp, z_org, i)
+function K = degFastFood(s, gpi, b, hyp, z_org, di)
 
 % Implementation of Fast Food.
 % Args:
@@ -8,30 +8,50 @@ function K = degFastFood(s, gpi, b, hyp, z_org, i)
 % See also deg_covFunctions.M.
 
 if nargin<4, K = '(2)'; return; end              % report number of parameters
-[sz, d] = size(z_org);
-D = 2^nextpow2(d);
-%TODO: might be this padding is not necessary since fwht does it by itself!
-z = [z_org zeros(sz, D-d)];
+sf2 = exp(2*hyp(2));                               % signal variance
 mD = size(s, 1);
-m = mD/D;
-ell = exp(hyp(1));                                 % characteristic length scale
-sf2 = exp(2*hyp(2));                               % signal variance%j = 1:m;
-W = zeros(mD, sz);
-for j = 1:m
-    idx = (1+(j-1)*D):(j*D);
-    %it appears the hadamard transform in matlab is scaled
-    w = fwht(diag(b(idx))*z', D, 'hadamard')*D;
-    w = fwht(diag(gpi(idx))*w, D, 'hadamard')*D;
-    W(idx, :) = diag(s(idx))*w;
+if nargin == 4
+   % return weight prior
+   K = sf2*ones(2*mD, 1)/mD;
+   return;
+elseif nargin == 5
+    % compute phi(z)
+    W = multiplyW(z_org, mD);
+    K = [cos(W); sin(W)];
+elseif nargin==5                                              % derivatives
+    %error('Optimization of hyperparameters not implemented.')
+    if isempty(z_org)
+        % compute derivative of weight prior
+        if di == 2
+            K = ones(2*mD, 1)/mD;
+        else
+            K = zeros(2*mD, 1);
+        end
+    else
+        % derivatives of phi(z)
+        if di == 1
+            ell = exp(hyp(1));                                 % characteristic length scale
+            W = multiplyW(z_org, mD);
+            K = [-sin(-W/ell); cos(-W/ell)];
+        else
+            K = zeros([2*mD, 1]);
+        end
+    end
 end
-% W2 = W;
-% W = fwht(diag(b)*repmat(z', [m, 1]));
-% W = fwht(diag(gpi)*W);
-% W = diag(s) * W;
-% W2 - W
-K = [cos(W); sin(W)];
-%K = exp(1i * W);
-if nargin>5                                              % derivatives
-    error('Optimization of hyperparameters not implemented.')
 end
+
+function W = multiplyW(z_org, mD)
+    [sz, d] = size(z_org);
+    D = 2^nextpow2(d);
+    %TODO: might be this padding is not necessary since fwht does it by itself!
+    z = [z_org zeros(sz, D-d)];
+    m = mD/D;
+    W = zeros(mD, sz);
+    for j = 1:m
+        idx = (1+(j-1)*D):(j*D);
+        %it appears the hadamard transform in matlab is scaled
+        w = fwht(diag(b(idx))*z', D, 'hadamard')*D;
+        w = fwht(diag(gpi(idx))*w, D, 'hadamard')*D;
+        W(idx, :) = diag(s(idx))*w;
+    end
 end

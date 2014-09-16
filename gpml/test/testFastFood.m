@@ -1,7 +1,12 @@
 function testFastFood()
     testHadamardMultiplication();
     testApproximationQuality();
+    testGradients();
     disp('All tests succesful.');
+end
+
+function testGradients()
+
 end
 
 function testApproximationQuality()
@@ -20,7 +25,6 @@ hyp.lik = log(noise)/2;
 hyp.cov = [log(ls); log(sf2)/2];
 
 d = 2^nextpow2(D);
-hyp.weight_prior = sf2*ones(2*m*d, 1)/(m*d);
 [s, gpi, b] = initFastFood(m, D, hyp.cov);
 %s = ones([m*d, 1])/sqrt(D);
 cov_deg = {@covDegenerate, {@degFastFood, s, gpi, b}};
@@ -57,10 +61,9 @@ ls = exp(2*lls);
 x = rand(n, D) / 2;
 hyp.lik = lnoise;
 hyp.cov = [lls; lsf];
-hyp.weight_prior = sf2*ones(2*m*D, 1)/(m*D);
 [s, gpi, b] = initFastFood(m, D, hyp.cov);
 cov_deg = {@covDegenerate, {@degFastFood, s, gpi, b}};
-Kimpl = feval(cov_deg{:}, hyp.cov, NaN, x);
+Kimpl = feval(cov_deg{:}, hyp.cov, [], x);
 
 H = ones(D);
 H(4) = -1;

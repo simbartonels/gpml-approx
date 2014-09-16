@@ -1,54 +1,45 @@
-D = 1; %MUST be 1
-M = 32;
-n = 2*M.^D;
-z = 5;
-b = ones(1, D);
-a = -b;
-
-x = rand(n, D) / 2;
-y = randn(n, 1);
-xs = rand(z, D) / 2;
-hyp.lik = randn(1);
-hyp1.lik = hyp.lik;
-hyp2.lik = hyp.lik;
-logls = log(0.1);
-logsf2 = 0;
-hyp.cov = [logls; logsf2];
-hyp1.cov = [];
-
-j = 1:M;
-j = j';
-
-%see Rasmussen p.154 above (7.11)
-S = @(r) exp(logsf2)*sqrt(2*pi)*(exp(logls).^D)*exp(-(exp(logls)*r).^2/2);
-
-sqrtlambda = pi*j/(b-a);
-s = S(sqrtlambda);
-cov = {@covHSMnaive, s, a, b, 1};
-[ymu ys2 fmu fs2] = gp(hyp1, @infExact, [], cov, @likGauss, x, y, xs);
-
-%create index matrix
-m = M;
-J = zeros(D, M.^D);
-for d = 1:(D-1)
-    J(d, :) = repmat(reshape(repmat((1:m)', 1, m.^(D-d))', [m.^(D-d+1), 1]), m.^(d-1), 1);
+function testDegInf()
+testdA();
 end
-J(D, :) = repmat((1:m)', m.^(D-1), 1);
-s = zeros(m.^D, 1);
-for k = 1:m.^D
-    sqrtlambda = pi*sqrt(sum((J(:, k)'./(b-a)).^2));
-    s(k) = S(sqrtlambda);
-end
-hyp2.cov = [m];
-hyp2.weight_prior = s;
-cov2 = {@covDegenerate, {@degHSM, a, b}};
-[ymuE ys2E fmuE fs2E] = gp(hyp2, @infExactDegKernel, [], cov2, @likGauss, x, y, xs);
-ymu - ymuE
-ys2 - ys2E
-fmu - fmuE
-fs2 - fs2E
 
-[nlZ] = gp(hyp1, @infExact, [], cov, @likGauss, x, y);
-[nlZE] = gp(hyp2, @infExactDegKernel, [], cov2, @likGauss, x, y);
-nlZ - nlZE
-%dnlZ - dnlZE
+function testdA()
+[sd, n, D, x, y, xs, logell, lsf2, lsn2] = initEnv()
+%lsf2 = 1;
+%lsn2 = 0
+%logell = 0
+%sd = 24713; %=18071
+rng(sd);
+logell = logell(1);
+m = 3;
+S = initSS(m, D, exp(logell));
+covhyp = [logell, lsf2];
+options = optimoptions(@fmincon,'Algorithm','interior-point',...
+    'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);
+optfunc = @(a) computeAdA(a, S, covhyp, x, exp(2*lsn2));
+%fplot(optfunc, [0, 2]);
+%derivative check
+fmincon(optfunc,...
+           covhyp,[],[],[],[],[],[],@unitdisk,options);
+disp('derviative check succesfully passed');
+end
+
+function [logdetA, dlogdetA] = computeAdA(a, S, covhyp, x, sn2)
+covhyp = a;
+Phi = degSS(S, covhyp, x);
+weight_prior = degSS(S, covhyp);
+SigmaInv = diag(1./weight_prior);
+A = (Phi*Phi')+sn2*SigmaInv;                      % evaluate covariance matrix
+L = chol(A);
+logdetA = 2*sum(log(diag(L)));
+if nargout > 1
+    dlogdetA = covhyp;
+    for k = 1:numel(covhyp)
+        dSigma = degSS(S, covhyp, [], k);
+        dPhi = degSS(S, covhyp, x, k);
+        dA = dPhi * Phi' + Phi * dPhi' - sn2 * SigmaInv * diag(dSigma) * SigmaInv; 
+        %dlogdetA(k) = ...
+        %TODO: replace with above
+        dlogdetA(k) = trace(solve_chol(L, dA)); % * detA / detA
+    end
+end
+end
