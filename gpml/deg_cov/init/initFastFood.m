@@ -26,7 +26,6 @@ function [s, gpi, b] = initFastFood(m, D, hyp)
     s = sqrt(s);
     g = randn([m*D, 1]);
     gpi = g.*randpi(:);
-    %no = zeros(1, m);
     for j = 1:m
         idx = (1+D*(j-1)):D*j;
         no = norm(gpi(idx, 1), 'fro');
@@ -34,8 +33,6 @@ function [s, gpi, b] = initFastFood(m, D, hyp)
         %no = sqrt(no);
         s(idx)=s(idx)/no;
     end
-    %s = reshape(repmat(s./no, D, 1), [m*D, 1]);
-    %the factor from equation (7)
-    %ell is already a square root
-    s = s/(sqrt(D)*ell); 
+    %the factor from equation (7) without ls
+    s = s/sqrt(D); 
 end

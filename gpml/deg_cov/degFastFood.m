@@ -16,31 +16,32 @@ if nargin == 4
    return;
 elseif nargin == 5
     % compute phi(z)
-    W = multiplyW(z_org, mD);
+    ell = exp(hyp(1));
+    W = multiplyW(z_org, mD, s, gpi, b, ell);
     K = [cos(W); sin(W)];
-elseif nargin==5                                              % derivatives
+elseif nargin==6                                              % derivatives
     %error('Optimization of hyperparameters not implemented.')
     if isempty(z_org)
         % compute derivative of weight prior
         if di == 2
-            K = ones(2*mD, 1)/mD;
+            K = 2 * sf2 * ones(2*mD, 1)/mD;
         else
             K = zeros(2*mD, 1);
         end
     else
         % derivatives of phi(z)
         if di == 1
-            ell = exp(hyp(1));                                 % characteristic length scale
-            W = multiplyW(z_org, mD);
-            K = [-sin(-W/ell); cos(-W/ell)];
+            ell = exp(hyp(1));
+            W = multiplyW(z_org, mD, s, gpi, b, ell);
+            K = [(sin(W).*W); (-cos(W).*W)];
         else
-            K = zeros([2*mD, 1]);
+            K = zeros([2*mD, size(z_org, 1)]);
         end
     end
 end
 end
 
-function W = multiplyW(z_org, mD)
+function W = multiplyW(z_org, mD, s, gpi, b, ell)
     [sz, d] = size(z_org);
     D = 2^nextpow2(d);
     %TODO: might be this padding is not necessary since fwht does it by itself!
@@ -52,6 +53,6 @@ function W = multiplyW(z_org, mD)
         %it appears the hadamard transform in matlab is scaled
         w = fwht(diag(b(idx))*z', D, 'hadamard')*D;
         w = fwht(diag(gpi(idx))*w, D, 'hadamard')*D;
-        W(idx, :) = diag(s(idx))*w;
+        W(idx, :) = diag(s(idx)/ell)*w;
     end
 end
