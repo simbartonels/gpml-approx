@@ -1,7 +1,7 @@
 function [sd, n, D, x, y, xs, logell, lsf2, lsn2] = initEnv()
 %INITENV Initializes often used variables.
 sd = floor(rand(1) * 32000)
-n = 5;
+n = 13;
 D = 3;
 x = rand(n, D);
 y = randn(n, 1);

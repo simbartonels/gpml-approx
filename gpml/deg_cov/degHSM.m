@@ -1,53 +1,49 @@
-function K = degHSM(a, b, hyp, z, i)
-
-% Squared Exponential covariance function with Automatic Relevance Detemination
-% (ARD) distance measure. The covariance function is parameterized as:
-%
-% k(x^p,x^q) = sf2 * exp(-(x^p - x^q)'*inv(P)*(x^p - x^q)/2)
-%
-% where the P matrix is diagonal with ARD parameters ell_1^2,...,ell_D^2, where
-% D is the dimension of the input space and sf2 is the signal variance. The
-% hyperparameters are:
-%
-% hyp = [ log(ell_1)
-%         log(ell_2)
-%          .
-%         log(ell_D)
-%         log(sqrt(sf2)) ]
-%
-% Copyright (c) by Carl Edward Rasmussen and Hannes Nickisch, 2010-09-10.
-%
-% See also COVFUNCTIONS.M.
-
-if nargin<3, K = '(1)'; return; end              % report number of parameters
-[sz, D] = size(z);
-%TODO: Covariance function needs as hyper-parameter lenghscale and
-%amplitude. m MUST NOT be a hyperparameter!
-m = hyp(1);
-%j = 1:m;
-%phij = pi*sum((z-repmat(a, 1, sz)')./repmat(b-a, 1, sz)', 2);
-%K = sqrt(2/(b-a))*sin(repmat(phij, 1, m).*repmat(j, sz, 1))';
-K = zeros(m.^D, sz);
-
-%create index matrix
-J = ones(D, m.^D);
-for d = 1:(D-1)
-    J(d, :) = repmat(reshape(repmat((1:m)', 1, m.^(D-d))', [m.^(D-d+1), 1]), m.^(d-1), 1);
+function K = degHSM(M, L, J, lambda, hyp, z, di)
+if nargin<5, K = '(2)'; return; end              % report number of parameters
+D = size(L, 1);
+if nargin==5
+   %return weight prior
+   K = getWeightPrior(lambda, M, D, hyp);
+   return;
+elseif nargin==6
+    sz = size(z, 1);
+    K = zeros(M^D, sz);
+    xMinusAoverBMinusA = (z-repmat(L, sz, 1))./repmat(2*L, sz, 1);
+    for k=1:M^D
+        j = J(:, k)';
+        K(k, :) = (prod(sqrt(1./L), 2) * prod(sin(pi * repmat(j, sz, 1) .* xMinusAoverBMinusA), 2))';
+    end
+elseif nargin==7                                                        % derivatives
+    %error('Optimization of hyperparameters not implemented.')
+    if isempty(z)
+        %gradients of the weight prior
+        if di == 1
+            ls2 = exp(2*hyp(1));
+            K = getWeightPrior(lambda, M, D, hyp).*(D-ls2*lambda);
+        elseif di == 2
+            %the derivative is just the weight prior itself
+            K = getWeightPrior(lambda, M, D, hyp);
+        else
+            error('Unknown hyper-parameter!');
+        end
+    else
+        %basis function gradients
+        sz = size(z, 1);
+        K = zeros(M^D, sz);
+    end
 end
-J(D, :) = repmat((1:m)', m.^(D-1), 1);
-
-xMinusAoverBMinusA = (z-repmat(a, sz, 1))./repmat(b-a, sz, 1);
-for k=1:m.^D
-    j = J(:, k)';
-    K(k, :) = (prod(sqrt(2./(b-a)), 2) * prod(sin(pi * repmat(j, sz, 1) .* xMinusAoverBMinusA), 2))';
-%    K(idx, :) = sin(pi*(z-repmat(a, sz, 1))./repmat(b-a, sz, 1))*j;
 end
-%K = prod(sqrt(2./(b-a)), 2) * K;
 
-%phij = pi*j.*(z-repmat(a, 1, sz)')./repmat(b-a, 1, sz)';
-%K = prod(sin(repmat(phij, 1, m).*repmat(j, sz, 1)), 2)';
+function K = getWeightPrior(lambda, M, D, hyp)
+    ls = exp(hyp(1));
+    sf = exp(hyp(2));
+    K = zeros(M^D, 1);
+    for k = 1:M^D
+         K(k) = spectralDensity(lambda(k), D, ls, sf);
+    end
+end
 
-
-if nargin>4                                                        % derivatives
-    error('Optimization of hyperparameters not implemented.')
+function s = spectralDensity(rSqrd, D, ls, sf)
+    %see Rasmussen p.154 above (7.11)
+    s = sf*sqrt(2*pi)*(ls^D)*exp(-ls^2*rSqrd/2);
 end
