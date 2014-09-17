@@ -26,44 +26,64 @@ if ~strcmp(likstr,'likGauss')               % NOTE: no explicit call to likGauss
   error('FITC inference only possible with Gaussian likelihood');
 end
 cov1 = cov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
-if ~strcmp(cov1,'covFITC'); error('Only covFITC supported.'), end    % check cov
+%if ~strcmp(cov1,'covFITC'); error('Only covFITC supported.'), end    % check cov
 
 [diagK,Kuu,Ku] = feval(cov{:}, hyp.cov, x);         % evaluate covariance matrix
 m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
 [n, D] = size(x); nu = size(Kuu,1);
 
 sn2  = exp(2*hyp.lik);                              % noise variance of likGauss
-snu2 = 1e-6*sn2;                              % hard coded inducing inputs noise
+%snu2 = 1e-6*sn2;                              % hard coded inducing inputs noise
+snu2 = 0;
 Luu  = chol(Kuu + snu2*eye(nu));                       % Kuu + snu2*I = Luu'*Luu
+% = Lvv if snu2 == 0
 V  = Luu'\Ku;                                     % V = inv(Luu')*Ku => V'*V = Q
+% = Vvx
 dg = diagK + sn2 - sum(V.*V,1)';      % D + sn2*eye(n) = diag(K) + sn2 - diag(Q)
+% = Gamma*sn2
 V  = V./repmat(sqrt(dg)',nu,1);
+% = Vvx*(sn2*Gamma)^(-1/2)
 Lu = chol(eye(nu) + V*V');
+% = chol(I + Vvx*(sn2*Gamma)^(-1)*Vvx') = Svv/sqrt(sn2)
 r  = (y-m)./sqrt(dg);
+% = y*(sn2*Gamma)^(-1/2)
 be = Lu'\(V*r);
+% sn:=sqrt(sn2)
+% = (Svv/sn)^(-1)*Vvx*(sn2*Gamma)^(-1/2)*y*(sn2*Gamma)^(-1/2)
+% = (Svv/sn)^(-1)*Vvx*(sn2*Gamma)^(-1)*y = beta/sn
 iKuu = solve_chol(Luu,eye(nu));                       % inv(Kuu + snu2*I) = iKuu
 post.alpha = Luu\(Lu\be);                      % return the posterior parameters
 post.L  = solve_chol(Lu*Luu,eye(nu)) - iKuu; % Sigma-inv(Kuu)
 post.sW = [];                                                  % unused for FITC
 if nargout>1                                % do we want the marginal likelihood
   nlZ = sum(log(diag(Lu))) + (sum(log(dg)) + n*log(2*pi) + r'*r - be'*be)/2; 
+  %= sum(log(diag(Svv/sqrt(sn2)))) +
+  %(sum(log(Gamma*sn2))+...+y'(sn2*Gamma)^(-1)*y-beta'beta/sn2)/2
+  % appears to be the same as in the Walder paper
   %CHALUPKA - free some memory or it's easy to run out on derivative computations.
   clear Lu Luu V;
   if nargout>2                                         % do we want derivatives?
     dnlZ = hyp;                                 % allocate space for derivatives
     W = Ku./repmat(sqrt(dg)',nu,1); 
-    W = chol(Kuu+W*W'+snu2*eye(nu))'\Ku; % inv(K) = inv(G) - inv(G)*W'*W*inv(G);  
+    W = chol(Kuu+W*W'+snu2*eye(nu))'\Ku; % inv(K) = inv(G) - inv(G)*W'*W*inv(G);
+    % = (Avv/sn2)^(-1/2)*Uvx
     al = (y-m - W'*(W*((y-m)./dg)))./dg;
+    % = (y - Uvx'*(Avv/sn2)^(-1)*Uvx*Gamma^(-1)*y)*Gamma^(-1)
     B = iKuu*Ku; 
+    % = Upsi^(-1)*Uvx
     clear Ku Kuu iKuu; %KRZ - also the line below moved from above.
     Wdg = W./repmat(dg',nu,1); w = B*al; 
-
+    
+    % w = Upsi^(-1)*Uvx*Gamma^(-1/2)*y - Upsi^(-1)*Uvx*Uvx'*v
     %KRZ - free more memory.
     for i = 1:numel(hyp.cov)
       [ddiagKi,dKuui,dKui] = feval(cov{:}, hyp.cov, x, [], i);  % eval cov deriv
       R = 2*dKui-dKuui*B; v = ddiagKi - sum(R.*B,1)';   % diag part of cov deriv
+      % R = 2*dUvx-dUpsi*Upsi^(-1)*Uvx
+      % v = dGamma?
       dnlZ.cov(i) = (ddiagKi'*(1./dg) +w'*(dKuui*w-2*(dKui*al)) -al'*(v.*al) ...
                          - sum(Wdg.*Wdg,1)*v - sum(sum((R*Wdg').*(B*Wdg'))) )/2;
+      % = tr(dGAmma*Gamma^(-1)) + ...
     end 
     clear dKui; %KRZ
     dnlZ.lik = sn2*(sum(1./dg) -sum(sum(W.*W,1)'./(dg.*dg)) -al'*al);
