@@ -33,8 +33,8 @@ m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
 [n, D] = size(x); nu = size(Kuu,1);
 
 sn2  = exp(2*hyp.lik);                              % noise variance of likGauss
-%snu2 = 1e-6*sn2;                              % hard coded inducing inputs noise
-snu2 = 0;
+snu2 = 1e-6*sn2;                              % hard coded inducing inputs noise
+%snu2 = 0;
 Luu  = chol(Kuu + snu2*eye(nu));                       % Kuu + snu2*I = Luu'*Luu
 % = Lvv if snu2 == 0
 V  = Luu'\Ku;                                     % V = inv(Luu')*Ku => V'*V = Q

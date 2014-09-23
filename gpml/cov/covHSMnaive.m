@@ -26,17 +26,9 @@ xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 x = x_full(:, d);
 n = size(x, 1);
 m = size(s, 1);
-%sf2 = exp(2*hyp(1));                                         % signal variance
-
 phij = @(inp) pi*sum((inp-repmat(a, size(inp, 1), 1))./repmat(b-a, size(inp, 1), 1), 2);
 j = 1:m;
-%phiall = @(inp) phij(inp, j);
 phiall = @(inp) sin(repmat(phij(inp), 1, m).*repmat(j, size(inp, 1), 1))';
-
-%phiDN = (x-repmat(a, 1, n)')./repmat(b-a, 1, n)';
-%phiN = sum(phiDN, 2);
-%matrix below must be NxM, i.e. phi_ij = phi_j(x_i)
-%phi = sin(pi*repmat(j, n, 1).*repmat(phiN, 1, m));
 phi = phiall(x);
 if dg                                                               % vector kxx
   K = 2*diag(phi'*(phi.*repmat(s, 1, n)))/(b-a);
@@ -44,17 +36,11 @@ else
   if xeqz                                                 % symmetric matrix Kxx
     K = 2*phi'*(phi.*repmat(s, 1, n))/(b-a);
   else                                                   % cross covariances Kxz
-    %phiDN = (z-repmat(a, 1, sz)')./repmat(b-a, 1, sz)';
-    %phiN = sum(phiDN, 2);
-    %j = 1:m;
-    %phiz = sin(pi*repmat(j, sz, 1).*repmat(phiN, 1, m));
-    %phi = phiall(x);
-    phiz = phiall(z);
+    phiz = phiall(z(:, d));
     K = 2*phiz'*(phi.*repmat(s, 1, n))/(b-a);
     K = K';
   end
 end
-%K = sf2*K; % covariance
 if nargin>7                                                        % derivatives
     error('Optimization of hyperparameters not implemented.')
 end

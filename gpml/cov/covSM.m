@@ -1,21 +1,26 @@
 function [K, Upsi, Uvx] = covSM(M, hyp, x, z, di)
-
-% Squared Exponential covariance function with Automatic Relevance Detemination
-% (ARD) distance measure. The covariance function is parameterized as:
+% Covariance function for infFITC. Efficient implementation of 
+% "Sparse Multiscale Gaussian Process regression" as
+% described in the paper by Walder, Kim and Schölkopf in 2008.
+% Let g be Walder's ARD SE. The covariance function is parameterized as:
 %
-% k(x^p,x^q) = sf2 * exp(-(x^p - x^q)'*inv(P)*(x^p - x^q)/2)
+% k(x,z) = delta(x, z) * g(x, z, [S[0], sf2]) + ...
+%               (1 - delta(x, z)) * u(V,x)'*inv(Upsi)*u(V, z)
 %
-% where the P matrix is diagonal with ARD parameters ell_1^2,...,ell_D^2, where
-% D is the dimension of the input space and sf2 is the signal variance. The
-% hyperparameters are:
+% where V is a matrix of inducing points, u(V, x)[i] = g(x, V[i], S[i]),S 
+% is a matrix of length scales and sf is the signal variance.
+% To describe the hyperparameters let M the number of inducing points, 
+% s = [ log(ell_1),
+%       log(ell_2),
+%        .
+%       log(ell_D) ]
+% S = [ s0; s1; s2; ... sM], v an M-dimensional vector and V = [v1; v2; ...
+% vM]. Then the hyperparameters are:
+% 
+% hyp = [flat(S), flat(V), log(sqrt(sf2))]
 %
-% hyp = [ log(ell_1)
-%         log(ell_2)
-%          .
-%         log(ell_D)
-%         log(sqrt(sf2)) ]
-%
-% Copyright (c) by Carl Edward Rasmussen and Hannes Nickisch, 2010-09-10.
+% ATTENTION: It is assumed that all vectors in the union of x and z are 
+% pairwise disjunct!
 %
 % See also COVFUNCTIONS.M.
 
@@ -34,10 +39,14 @@ if dg                                                               % vector kxx
 else
     sigma = hyp(D+1:M*D+D);
     sigma = reshape(sigma, [M, D]);
-    if any(exp(2*sigma) < repmat(exp(2*logll')/2, [M, 1]))
+    if any(any(exp(2*sigma) < repmat(exp(2*logll')/2, [M, 1])))
         disp('All inducing input length scales must be longer than half the corresponding length scale!');
         %error('All inducing input length scales must be longer than half the corresponding length scale!');
-        K = zeros([n, 1]);
+        if xeqz
+            K = zeros([n, 1]);
+        else
+            K = zeros([M, size(z, 1)]);
+        end
         Upsi = eye(M);
         Uvx = zeros([M, n]);
         if nargin > 4
