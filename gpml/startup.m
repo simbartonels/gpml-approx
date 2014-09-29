@@ -23,4 +23,6 @@ addpath([mydir,'test'])
 addpath([mydir, 'deg_cov'])
 addpath([mydir, 'deg_cov\\init'])
 
+startup_test;
+
 clear me mydir

@@ -16,21 +16,15 @@ if nargin==5
    K = getWeightPrior(lambda, M, D, hyp);
    return;
 elseif nargin==6
-    sz = size(z, 1);
     ls = exp(hyp(1:D));
-    z = z./repmat(ls'/LS(), [sz, 1]);
-    K = zeros(M^D, sz);
-    xMinusAoverBMinusA = (z+repmat(L, sz, 1))./repmat(2*L, sz, 1);
-    for k=1:M^D
-        j = J(:, k)';
-        K(k, :) = (prod(sqrt(1./L), 2) * prod(sin(pi * repmat(j, sz, 1) .* xMinusAoverBMinusA), 2))';
-    end
+    K = computePhi(z, D, M, ls, L);
 elseif nargin==7                                                        % derivatives
     %error('Optimization of hyperparameters not implemented.')
     if isempty(z)
         %gradients of the weight prior
         if di <= D
-            error('To do: implement!');
+            %error('To do: implement!');
+            K =  zeros([M^D, 1]);
         elseif di == D+1
             %the derivative is just the weight prior itself
             K = getWeightPrior(lambda, M, D, hyp);
@@ -38,12 +32,79 @@ elseif nargin==7                                                        % deriva
             error('Unknown hyper-parameter!');
         end
     else
-        %basis function gradients
         sz = size(z, 1);
-        K = zeros(M^D, sz);
+        if di == D+1
+            K = zeros(M^D, sz);
+        elseif di <= D
+            ls = exp(hyp(1:D));
+            K = computePhidlls(z, D, M, ls, L, di);
+        else
+            error('Unknown hyper-parameter!');
+        end 
     end
 end
 end
+
+function K = computePhi(z, D, M, ls, L)
+    z = z*diag(LS()./ls');
+    sz = size(z, 1);
+    Phi = zeros(D, M, sz);
+    m = 1:M;
+    m = m';
+    m = pi*m/2;
+    %computing the eigenfunction values for D=1
+    for d = 1:D
+        Phi(d, :, :) = 1/sqrt(L(d)) * sin( m*(z(:, d)'+L(d))/L(d) );
+    end
+    
+    K = multiplyAllCombinations(Phi);
+end
+
+function dK = computePhidlls(z, D, M, ls, L, di)
+%COMPUTEPHIDLLS Computes the gradients of Phi with respect to the length
+% scales on a log scale.
+    z = z*diag(LS()./ls');
+    sz = size(z, 1);
+    Phi = zeros(D, M, sz);
+    m = 1:M;
+    m = m';
+    m = pi*m/2;
+    %computing the eigenfunction values for D=1
+    for d = 1:D
+        if d == di    
+            Phi(di, :, :) = 1/sqrt(L(di))*diag(m)*cos( m*(z(:, di)'+L(di))/L(di) )/L(di);
+        else
+            Phi(d, :, :) = 1/sqrt(L(d)) * sin( m*(z(:, d)'+L(d))/L(d) );
+        end
+    end
+    
+    dK = multiplyAllCombinations(Phi);
+    dK = dK*diag(-z(:, di));
+end
+
+function K = multiplyAllCombinations(Phi)
+%MULTIPLYALLCOMBINATIONS Multiplies along the first and third dimension all 
+% elements in the second. 
+    %in the multidimensional case we need to mutiply all combinations
+    % we can't use squeeze here since it messes things up in special cases
+    % where e.g. M=1=D
+    sz = size(Phi, 3);
+    M = size(Phi, 2);
+    D = size(Phi, 1);
+    temp = reshape(Phi(1, :, :), [M, sz]);
+    Md = M;
+    for d = 2:D
+        t2 = zeros(Md*M, sz);
+        for m = 1:M
+            idx = (m-1)*Md+(1:Md);
+            t2(idx, :) = temp * diag(squeeze(Phi(d, m, :)));
+        end
+        temp = t2;
+        Md = Md * M;
+    end
+    K = temp;
+end
+
 
 function K = getWeightPrior(lambda, M, D, hyp)
     sf = exp(hyp(D+1));
@@ -60,4 +121,32 @@ end
 
 function retval = LS()
     retval = 0.1;
+end
+
+function dK = testDPhi(z, D, M, ls, L, di)
+%TESTDPHI Function to test whether the gradients of Phi are computed
+%correctly. To enable just replace the respective call.
+    options = optimoptions(@fmincon,'Algorithm','interior-point',...
+        'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);
+    k = floor(rand(1)*M^D+1);
+    l = floor(rand(1)*size(z, 1)+1);
+    % actual optimization function
+    actoptfunc = @(sls) optfunc(exp(sls), z, D, M, ls, L, di, k, l);
+    %derivative check
+    try
+        fmincon(actoptfunc,...
+                   log(ls(di)),[],[],[],[],[],[],@unitdisk,options);
+    catch
+        di
+        error('Gradientcheck in degHSM failed');
+    end
+    dK = computePhidlls(z, D, M, ls, L, di);
+end
+
+function [sK, sdK] = optfunc(sls, z, D, M, ls, L, di, k, l)
+    ls(di) = sls;
+    K = computePhi(z, D, M, ls, L);
+    dK = computePhidlls(z, D, M, ls, L, di);
+    sK = K(k, l);
+    sdK = dK(k, l);
 end

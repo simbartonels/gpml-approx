@@ -12,7 +12,7 @@ end
 function J = getIndexMatrix(D, M)
     J = ones(D, M^D);
     for d = 1:(D-1)
-        J(d, :) = repmat(reshape(repmat((1:M)', 1, M.^(D-d))', [M.^(D-d+1), 1]), M.^(d-1), 1);
+        J(D-d+1, :) = repmat(reshape(repmat((1:M)', 1, M.^(D-d))', [M.^(D-d+1), 1]), M.^(d-1), 1);
     end
-    J(D, :) = repmat((1:M)', M.^(D-1), 1);
+    J(1, :) = repmat((1:M)', M.^(D-1), 1);
 end
