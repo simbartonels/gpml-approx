@@ -39,20 +39,10 @@ if dg                                                               % vector kxx
 else
     sigma = hyp(D+1:M*D+D);
     sigma = reshape(sigma, [M, D]);
+    % TODO: instead of this check it would be better to set optimization
+    % boundaries.
     if any(any(exp(2*sigma) < repmat(exp(2*logll')/2, [M, 1])))
-        disp('All inducing input length scales must be longer than half the corresponding length scale!');
-        %error('All inducing input length scales must be longer than half the corresponding length scale!');
-        if xeqz
-            K = zeros([n, 1]);
-        else
-            K = zeros([M, size(z, 1)]);
-        end
-        Upsi = eye(M);
-        Uvx = zeros([M, n]);
-        if nargin > 4
-            % gradients are all 0
-            Upsi = zeros([M, M]);
-        end
+        [K, Upsi, Uvx] = performErrorHandling();
         return
     end
 
@@ -226,4 +216,20 @@ function [d, j] = getDimensionAndIndex(di, D, M)
     % which dimension the parameter belongs to
     d = (di-D-j)/M+1;
     d = mod(d-1, D)+1;
+end
+
+function [K, Upsi, Uvx] = performErrorHandling()
+    disp('All inducing input length scales must be longer than half the corresponding length scale!');
+    %error('All inducing input length scales must be longer than half the corresponding length scale!');
+    if xeqz
+        K = zeros([n, 1]);
+    else
+        K = zeros([M, size(z, 1)]);
+    end
+    Upsi = eye(M);
+    Uvx = zeros([M, n]);
+    if nargin > 4
+        % gradients are all 0
+        Upsi = zeros([M, M]);
+    end
 end

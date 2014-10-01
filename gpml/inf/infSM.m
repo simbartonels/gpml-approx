@@ -29,6 +29,10 @@ lambda = zeros(n, 1);
 for i=1:n
     lambda(i) = Uvx(:, i)' * solve_chol(Lpsi, Uvx(:, i));
 end
+%TODO: the step above could be more efficient using following:
+%Vvx = Lpsi'\Uvx;
+%lambda = sum(Vvx.*Vvx, 1)';
+
 lambda = K - lambda;
 %TODO: is it really necessary to create the diagonal? if it is always
 %multiplied with a vector it is not necessary!
