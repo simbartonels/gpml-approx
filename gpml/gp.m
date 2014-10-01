@@ -126,7 +126,7 @@ else
     K = feval(cov{:}, hyp.cov, x(nz,:));
     L = chol(eye(sum(nz))+sW*sW'.*K);
   end
-  Ltril = all(all(tril(L,-1)==0));            % is L an upper triangular matrix?
+  Ltril = all(all(tril(L,-1)==0)) && ~all(all(L == 0));            % is L an upper triangular matrix?
   ns = size(xs,1);                                       % number of data points
   nperbatch = 1000;                       % number of data points per mini batch
   nact = 0;                       % number of already processed test data points
