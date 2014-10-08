@@ -50,7 +50,7 @@ end
 function [K, dK] = matrixGradientCheckFunction(h, z, s, gpi, b, hyp, di)
     hyp(di) = h;
     K = degFastFood(s, gpi, b, hyp, z);
-    dK = degFastFood(s, gpi, b, hyp, z, di)
+    dK = degFastFood(s, gpi, b, hyp, z, di);
 end
 
 function testGradients()

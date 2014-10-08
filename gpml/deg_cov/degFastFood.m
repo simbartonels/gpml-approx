@@ -34,7 +34,9 @@ elseif nargin==6                                              % derivatives
         % derivatives of phi(z)
         if di >= 2
             W = multiplyW(z_org, mD, s, gpi, b, hyp);
-            W2 = W;%*diag(z_org(:, di-1)/exp(hyp(di)));
+            z2 = zeros(size(z_org));
+            z2(:, di-1) = z_org(:, di-1);
+            W2 = multiplyW(z2, mD, s, gpi, b, hyp);
             K = [(sin(W).*W2); (-cos(W).*W2)];
         else
             K = zeros([2*mD, size(z_org, 1)]);
