@@ -6,11 +6,11 @@ function K = degFastFood(s, gpi, b, hyp, z_org, di)
 % gpi - the product of G and Pi (also a diagonal therefore as vector)
 % b - the (diagonal) random binary matrix (as vector)
 % Hyper-parameters:
-% [log(signal variance); log(lengthscale1); ...; log(lengthscaleD)]
+% [log(signal variance); log(lengthscale);]
 % 
 % See also deg_covFunctions.M.
 
-if nargin<4, K = '(D+1)'; return; end              % report number of parameters
+if nargin<4, K = '(2)'; return; end              % report number of parameters
 sf2 = exp(2*hyp(1));                               % signal variance
 mD = size(s, 1);
 if nargin == 4
@@ -32,7 +32,7 @@ elseif nargin==6                                              % derivatives
         end
     else
         % derivatives of phi(z)
-        if di >= 2
+        if di == 2
             W = multiplyW(z_org, mD, s, gpi, b, hyp);
             W2 = W;%*diag(z_org(:, di-1)/exp(hyp(di)));
             K = [(sin(W).*W2); (-cos(W).*W2)];
@@ -46,12 +46,9 @@ end
 function W = multiplyW(z_org, mD, s, gpi, b, hyp)
     [sz, d] = size(z_org);
     D = 2^nextpow2(d);
-    ell = [exp(hyp(2:d+1)); ones([D-d, 1])];
+    ell = exp(hyp(2));
     %TODO: might be this padding is not necessary since fwht does it by itself!
-    z = [z_org zeros(sz, D-d)];
-    %somehow it won't give the same result when the division is applied
-    %later. This works better.
-    z = z./repmat(ell', [sz, 1]);
+    z = [z_org/ell zeros(sz, D-d)];
     m = mD/D;
     W = zeros(mD, sz);
     for j = 1:m

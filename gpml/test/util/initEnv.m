@@ -3,10 +3,12 @@ function [x, y, xs, hyp] = initEnv(sd)
 % sd - seed for the random number generator (optional)
 if nargin == 0
     sd = floor(rand(1) * 32000)
+else
+    disp('Using provided seed');
 end
 rng(sd);
 n = 17;
-D = 3;
+D = 2;
 x = rand(n, D);
 y = randn(n, 1);
 xs = rand(2, D);
