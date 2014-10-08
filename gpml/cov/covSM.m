@@ -28,6 +28,8 @@ if nargin<2, K = sprintf('(2*%d*D+D+1)', M); return; end % report number of para
 if nargin<4, z = []; end                                   % make sure, z exists
 xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 
+% TODO: it's probably the best to make a mex file...
+
 [n,D] = size(x);
 %TODO: make sure basis points have same dimension as x
 logll = hyp(1:D);                               % characteristic length scale
@@ -42,7 +44,7 @@ else
     % TODO: instead of this check it would be better to set optimization
     % boundaries.
     if any(any(exp(2*sigma) < repmat(exp(2*logll')/2, [M, 1])))
-        [K, Upsi, Uvx] = performErrorHandling();
+        [K, Upsi, Uvx] = performErrorHandling(xeqz, nargin > 4);
         return
     end
 
@@ -218,7 +220,7 @@ function [d, j] = getDimensionAndIndex(di, D, M)
     d = mod(d-1, D)+1;
 end
 
-function [K, Upsi, Uvx] = performErrorHandling()
+function [K, Upsi, Uvx] = performErrorHandling(xeqz, gradients)
     disp('All inducing input length scales must be longer than half the corresponding length scale!');
     %error('All inducing input length scales must be longer than half the corresponding length scale!');
     if xeqz
@@ -228,7 +230,7 @@ function [K, Upsi, Uvx] = performErrorHandling()
     end
     Upsi = eye(M);
     Uvx = zeros([M, n]);
-    if nargin > 4
+    if gradients
         % gradients are all 0
         Upsi = zeros([M, M]);
     end
