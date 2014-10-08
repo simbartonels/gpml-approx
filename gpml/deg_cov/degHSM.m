@@ -1,7 +1,7 @@
 function K = degHSM(M, L, J, lambda, hyp, z, di)
 % DEGHSM Degenerate covariance function proposed in "Hilbert Space Methods
 % for Reduced Rank Gaussian Process Regression" by Solin and Särkkä in
-% 2014. 
+% 2014 augmented with automatic relevance determination.
 % M - the number of basis functions
 % L - a vector describing the range of the inputs, i.e. x in [-L, L]
 % J - an index matrix created in initHSM.
@@ -57,7 +57,7 @@ function K = computePhi(z, D, M, ls, L)
         Phi(d, :, :) = 1/sqrt(L(d)) * sin( m*(z(:, d)'+L(d))/L(d) );
     end
     
-    K = multiplyAllCombinations(Phi);
+    K = kronPower(Phi);
 end
 
 function dK = computePhidlls(z, D, M, ls, L, di)
@@ -78,13 +78,12 @@ function dK = computePhidlls(z, D, M, ls, L, di)
         end
     end
     
-    dK = multiplyAllCombinations(Phi);
+    dK = kronPower(Phi);
     dK = dK*diag(-z(:, di));
 end
 
-function K = multiplyAllCombinations(Phi)
-%MULTIPLYALLCOMBINATIONS Multiplies along the first and third dimension all 
-% elements in the second. 
+function K = kronPower(Phi)
+%KRONPOWER Computes the kronecker power of Phi to the D.
     %in the multidimensional case we need to mutiply all combinations
     % we can't use squeeze here since it messes things up in special cases
     % where e.g. M=1=D

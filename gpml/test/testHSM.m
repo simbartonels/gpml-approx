@@ -3,7 +3,7 @@ function testHSM()
     testToyExample();
     testGradients2();
     testGradients();
-    %testAgainstNaiveImplementation();
+    testAgainstNaiveImplementation();
 end
 
 function testSEard()
@@ -73,11 +73,9 @@ function testGradients2()
 end
 
 function testGradients()
-    [sd, n, D, x, y, xs, logell, lsf2, lsn2] = initEnv();
-    rng(sd);
-    hyp.lik = lsn2;
-    hyp.cov = [logell; lsf2];
-    M = 1;
+    [x, y, ~, hyp] = initEnv();
+    M = 2;
+    D = size(x, 2);
     L = 1.2 * max(abs(x));%rand(1, D);
     [J, lambda] = initHSM(M, D, L);
 
