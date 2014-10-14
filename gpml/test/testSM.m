@@ -1,9 +1,132 @@
 function testSM()
-    testAgainstFullGP();
+    testUpsi();
+    testUvx();
+    %testAgainstFullGP();
     testFITCimplAgainstNaive();
-    testGradients();
-    testFailures();
+    %testGradients();
+    %testFailures();
 end
+
+function testUpsi()
+    M = 4;
+    [x, ~, ~, hyp] = initEnv();
+    D = size(x, 2);
+    logell = hyp.cov(1:D);
+    lsf = hyp.cov(D+1);
+    logsigma = randn(M, D);
+    logsigma = log(exp(2*logsigma)+repmat(exp(2*logell')/2, [M, 1]))/2;
+    V = randn([M, D]);
+    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
+        reshape(V, [M*D, 1]); lsf];
+    [~, Upsi, ~] = covSM(M, smhyp.cov, x);
+    sigma = exp(2*logsigma);
+    ell = exp(2*logell);
+    U = zeros([M, M]);
+    for i = 1:M
+        for j = 1:M
+            temp = sigma(i, :)+sigma(j, :)-ell';
+            K = (V(i, :)-V(j, :))*diag(1./temp)*(V(i, :)-V(j, :))';
+            u = exp(-K/2);
+            f1 = -(log(2*pi)*D+sum(log(temp)/2, 2)*2)/4;
+            f2 = exp(2*f1);
+            f1 = 1/(sqrt(prod(temp))*sqrt((2*pi)^D));
+            u = u * f1;
+            U(i, j) = u;
+        end
+    end
+    U = U/exp(2*lsf);
+    if max(max((U - Upsi).^2)) > 1e-15
+        error('Something is wrong in the computation of Upsi');
+    end
+end
+
+function testUvx()
+    testUvxSimple();
+    testUvxSimple2();
+    testUvxRandom();
+end
+function testUvxSimple()
+    %first tests the computation of Uvx for a special case in D=2
+    %x = 0, V=1, sigma=1 => should deal 1/(2*pi*e)
+    n = 5;
+    M = n;
+    D = 2;
+    x = zeros(n, D);
+    logell = zeros(D, 1);
+    logsigma = repmat(logell', M, 1);
+    %length scales are all 1
+
+    lsf2 = 0;
+    V = ones(n, D);
+    %so V-x= 1
+    
+    smhyp.lik = log(randn(1)^2);
+    smhyp.M = M;
+    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
+    reshape(V, [M*D, 1]); lsf2];
+    [~, ~, U] = covSM(M, smhyp.cov, x);
+    for l=1:n
+        if (U(l) - 1/(2*pi*exp(1)))^2 > 1e-30
+            error('Testing computation of Uvx failed.');
+        end
+    end
+end
+
+function testUvxSimple2()
+    %first tests the computation of Uvx for a special case in D=2
+    %x = 0, V=1, sigma=1 => should deal 1/(2*pi*e)
+    n = 5;
+    M = n;
+    D = 2;
+    x = zeros(n, D);
+    sigma = 2 * ones(D, 1);
+    logell = log(sigma)/2;
+    logsigma = repmat(logell', M, 1);
+    %length scales are all 1
+
+    lsf2 = 0;
+    V = ones(n, D);
+    %so V-x= 1
+    
+    smhyp.lik = log(randn(1)^2);
+    smhyp.M = M;
+    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
+    reshape(V, [M*D, 1]); lsf2];
+    [~, ~, U] = covSM(M, smhyp.cov, x);
+    for l = 1:n
+        if (U(l) - exp(-sum(1./sigma)/2)/sqrt((2*pi)^D*prod(sigma)))^2 > 1e-30
+            error('Testing computation of Uvx failed.');
+        end
+    end
+end
+
+function testUvxRandom()
+    %now a random example
+    D = 2;
+    x = randn(1, D);
+    V = randn(1, D);
+    M = size(V, 1);
+    logell = randn(D, 1)/2;
+    sigma = exp(2*logell);
+    logsigma = repmat(logell', M, 1);
+    lsf = randn(1);
+    %sf2 = exp(2*lsf);
+    
+    smhyp.lik = log(randn(1)^2);
+    smhyp.M = M;
+    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
+        reshape(V, [M*D, 1]); lsf];
+    factor = 1/sqrt((2*pi)^D*prod(sigma));
+    [~, ~, u] = covSM(M, smhyp.cov, x);
+    %sf2 plays no role in Uvx
+    K = (x-V)*diag(1./sigma)*(x-V)';
+    us = factor*exp(-K/2);
+    if (u - us)^2 > 1e-30
+        error('Testing computation of Uvx failed.');
+    end
+    
+end
+
 
 function testFailures()
     testTooSmallInducingLengthScales();
@@ -44,6 +167,7 @@ function testAgainstFullGP()
 % Assert that if using M=n inducing points with U=X that we have then the
 % original GP.
     % seed that appears to break this test: sd = 1894
+    % sd = 26071
     [x, y, xs, hyp] = initEnv();
 
     [ymuE, ys2E] = gp(hyp, @infExact, [], @covSEard, @likGauss, x, y, xs);
@@ -74,7 +198,8 @@ function testFITCimplAgainstNaive()
     % If the length scales of the individual basis functions are equal to the 
     % GPs length scales the method becomes equivalent Snelson's SPGP/FITC 
     % method.
-    [x, y, xs, smhyp] = initEnvConcrete();
+    %sd = 31594;
+    [x, y, xs, smhyp] = initEnvConcrete(31594);
     D = size(x, 2);
     M = (numel(smhyp.cov)-1-D)/D/2;
 
@@ -85,8 +210,8 @@ function testFITCimplAgainstNaive()
 
     [ymuS, ys2S] = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y, xs);
     nlZS = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y);
-    dev_impl_and_fitc = [max((ymu-ymuS).^2), max((ys2-ys2S).^2), nlZS - nlZ];
-    if any(dev_impl_and_fitc > 1e-14), error('FITC Implementation appears broken!'); end
+    diff_impl_and_fitc = [max((ymu-ymuS).^2), max((ys2-ys2S).^2), nlZS - nlZ]
+    if any(diff_impl_and_fitc > 1e-14), error('FITC Implementation appears broken!'); end
 end
 
 function testGradients()

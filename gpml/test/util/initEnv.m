@@ -8,7 +8,7 @@ else
 end
 rng(sd);
 n = 17;
-D = 2;
+D = 3;
 x = rand(n, D);
 y = randn(n, 1);
 xs = rand(2, D);

@@ -34,9 +34,9 @@ function K = covSMnaive(M, logIndNoise, hyp, x, z, i)
     lsf = hyp(2*M*D+D+1);
     %Walder uses a slightly different ARD SE where the sigmas influence the 
     %length scale
-    actlsf2 = lsf-(log(2*pi)*D+sum(logll)*2)/4;
+    actlsf = lsf-(log(2*pi)*D+sum(logll, 1)*2)/4;
     if dg                                                               % vector kxx
-        K = covSEard([logll; actlsf2], x, 'diag');
+        K = covSEard([logll; actlsf], x, 'diag');
     else
         [~, Upsi, Uvx] = covSM(M, hyp, x);
         % add noise for the inducing inputs
@@ -45,13 +45,12 @@ function K = covSMnaive(M, logIndNoise, hyp, x, z, i)
         Lpsi = chol(Upsi);
         clear Upsi;
         if xeqz, 
-            %K2 = Uvx'*solve_chol(Lpsi, Uvx);
             %this is to ensure that K is positive definite
             K = Lpsi'\Uvx;
             K = K'*K;
+            %K = Uvx'*solve_chol(Lpsi, Uvx);
             %set diagonal to what Walder's ARD SE would produce
-            K(logical(eye(size(K)))) = 0;
-            K = K + diag(covSEard([logll; actlsf2], x, 'diag')); 
+            K(logical(eye(size(K)))) = covSEard([logll; actlsf], x, 'diag'); 
         else
             Uvz = covSM(M, hyp, x, z);
             K = Uvx'*solve_chol(Lpsi, Uvz);

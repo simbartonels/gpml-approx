@@ -44,7 +44,7 @@ else
     % TODO: instead of this check it would be better to set optimization
     % boundaries.
     if any(any(exp(2*sigma) < repmat(exp(2*logll')/2, [M, 1])))
-        [K, Upsi, Uvx] = performErrorHandling(xeqz, nargin > 4);
+        [K, Upsi, Uvx] = performErrorHandling(n, M, z, xeqz, nargin > 4);
         return
     end
 
@@ -220,7 +220,7 @@ function [d, j] = getDimensionAndIndex(di, D, M)
     d = mod(d-1, D)+1;
 end
 
-function [K, Upsi, Uvx] = performErrorHandling(xeqz, gradients)
+function [K, Upsi, Uvx] = performErrorHandling(n, M, z, xeqz, gradients)
     disp('All inducing input length scales must be longer than half the corresponding length scale!');
     %error('All inducing input length scales must be longer than half the corresponding length scale!');
     if xeqz
