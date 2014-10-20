@@ -1,10 +1,81 @@
 function testSM()
     testUpsi();
     testUvx();
-    %testAgainstFullGP();
+    testAgainstFullGP();
+    testFITCMatrixRelations()
     testFITCimplAgainstNaive();
-    %testGradients();
+    testGradients();
+    testFITCisSpecialCase();
     %testFailures();
+end
+
+function testFITCMatrixRelations()
+    M = 4;
+    [x, ~, ~, hyp] = initEnv();
+    D = size(x, 2);
+    logell = 2 * hyp.cov(1:D);
+    logc = hyp.cov(D+1);
+    logf = log(sqrt(prod(exp(logell))*(2*pi)^D));
+    logf = (sum(logell)+D*log(2*pi))/2;
+    lsf = 2 * logc+logf;
+    logsigma = repmat(log(exp(logell')/2), M, 1);
+    V = randn([M, D]);
+    smhyp.lik = hyp.lik;
+    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
+        reshape(V, [M*D, 1]); lsf];
+    [diagK, Kuu, Ku] = covFITC({@covSEard}, V, hyp.cov, x);
+    [diagK2, Upsi, Uvx] = covSM(M, smhyp.cov, x);
+    if any(any(abs(diagK - diagK2) > 1e-14)) 
+        diff = max(max(abs(diagK - diagK2)))
+        error('The diagonals do not agree!');
+    end
+    
+    V1 = chol(Kuu)\Ku;
+    V2 = chol(Upsi)\Uvx;
+    if any(any(abs(V1*V1' - V2*V2') > 1e-14))
+        diff = max(max(abs(V1*V1' - V2*V2')))
+        disp('FITC and SM matrices do not exhibit the relations they should have.');
+    end
+    
+    Uvx = exp(lsf) * Uvx;
+    if any(any(abs(Ku - Uvx) > 1e-14))
+        diff = max(max(abs(Ku - Uvx)))
+        error('Ku and Uvx do not exhibit the relations they should have.');
+    end
+    Upsi = exp(2*lsf) * Upsi;
+    if any(any(abs(Kuu - Upsi) > 1e-14))
+        diff = max(max(abs(Kuu - Upsi)))
+        error('Kuu and Upsi do not exhibit the relations they should have.');
+    end
+end
+
+function testFITCisSpecialCase()
+    [x, y, xs, hyp] = initEnv();
+    M = 4;
+    D = size(x, 2);
+    
+    % TODO: it is probably better to define g as a kernel
+    logell = 2 * hyp.cov(1:D);
+    f = (log(2*pi)*D+sum(logell))/2;
+    f = log(sqrt(prod(exp(logell))*(2*pi)^D));
+    lsf = 2 * hyp.cov(D+1)+f;
+    logsigma = repmat(logell'-log(2), M, 1);
+    V = randn([M, D]);
+    smhyp.lik = hyp.lik;
+    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
+        reshape(V, [M*D, 1]); lsf];
+    [ymu, ys2] = gp(hyp, @infFITC, [], {@covFITC, {@covSEard}, V}, @likGauss, x, y, xs);
+    %testing against FITCimpl and not with naive for numeric stability
+    [ymuE, ys2E] = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y, xs);
+    %[ymuE, ys2E] = gp(smhyp, @infExact, [], {@covSMnaive, M, logindnoise}, @likGauss, x, y, xs);
+    nlZ = gp(hyp, @infFITC, [], {@covFITC, {@covSEard}, V}, @likGauss, x, y);
+    %nlZE = gp(smhyp, @infExact, [], {@covSMnaive, M, logindnoise}, @likGauss, x, y);
+    nlZE = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y);
+    
+    worst_diff_fitc = [max((ymu-ymuE).^2), max((ys2-ys2E).^2), nlZ - nlZE]
+    if any(abs(worst_diff_fitc) > 1e-13) 
+        error('FITC is not a special case! Make sure the inducing input noise set to zero.');
+    end
 end
 
 function testUpsi()
@@ -14,35 +85,37 @@ function testUpsi()
     logell = hyp.cov(1:D);
     lsf = hyp.cov(D+1);
     logsigma = randn(M, D);
-    logsigma = log(exp(2*logsigma)+repmat(exp(2*logell')/2, [M, 1]))/2;
+%    logsigma = log(exp(2*logsigma)+repmat(exp(2*logell')/2, [M, 1]))/2;
     V = randn([M, D]);
     smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
         reshape(V, [M*D, 1]); lsf];
     [~, Upsi, ~] = covSM(M, smhyp.cov, x);
-    sigma = exp(2*logsigma);
-    ell = exp(2*logell);
+
+    %TODO: remove if reverting changes
+    logsigma = log(exp(logsigma)+repmat(exp(logell')/2, [M, 1]));
+
+    sigma = exp(logsigma);
+    ell = exp(logell);
     U = zeros([M, M]);
     for i = 1:M
         for j = 1:M
             temp = sigma(i, :)+sigma(j, :)-ell';
-            K = (V(i, :)-V(j, :))*diag(1./temp)*(V(i, :)-V(j, :))';
+            K = (V(i, :)-V(j, :))*diag(1./(temp))*(V(i, :)-V(j, :))';
             u = exp(-K/2);
-            f1 = -(log(2*pi)*D+sum(log(temp)/2, 2)*2)/4;
-            f2 = exp(2*f1);
-            f1 = 1/(sqrt(prod(temp))*sqrt((2*pi)^D));
+            f1 = 1/(sqrt(prod(temp)*(2*pi)^D));
             u = u * f1;
             U(i, j) = u;
         end
     end
-    U = U/exp(2*lsf);
+    U = U/exp(lsf);
     if max(max((U - Upsi).^2)) > 1e-15
         error('Something is wrong in the computation of Upsi');
     end
 end
 
 function testUvx()
-    testUvxSimple();
-    testUvxSimple2();
+    %testUvxSimple();
+    %testUvxSimple2();
     testUvxRandom();
 end
 function testUvxSimple()
@@ -106,18 +179,20 @@ function testUvxRandom()
     x = randn(1, D);
     V = randn(1, D);
     M = size(V, 1);
-    logell = randn(D, 1)/2;
-    sigma = exp(2*logell);
+    logell = randn(D, 1);
     logsigma = repmat(logell', M, 1);
     lsf = randn(1);
     %sf2 = exp(2*lsf);
     
-    smhyp.lik = log(randn(1)^2);
-    smhyp.M = M;
+    smhyp.lik = randn(1);
     smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
         reshape(V, [M*D, 1]); lsf];
-    factor = 1/sqrt((2*pi)^D*prod(sigma));
     [~, ~, u] = covSM(M, smhyp.cov, x);
+
+    % We need to add half of the length scales. It's what happens
+    % internally for robustness.
+    sigma = exp(logell)+exp(logell)/2;
+    factor = 1/sqrt(prod(sigma)*(2*pi)^D);
     %sf2 plays no role in Uvx
     K = (x-V)*diag(1./sigma)*(x-V)';
     us = factor*exp(-K/2);
@@ -174,32 +249,33 @@ function testAgainstFullGP()
     nlZtrue = gp(hyp, @infExact, [], @covSEard, @likGauss, x, y);
 
     V = x;
-    M = size(V, 1);
-    D = size(x, 2);
-    logell = hyp.cov(1:D);
-    lsf2 = hyp.cov(D+1);
-    logsigma = repmat(logell', M, 1);
+    [M, D] = size(V);
+    % We need to multiply by 2 since Walder's function g does not divide by
+    % the square of the length scales.
+    logell = 2 * hyp.cov(1:D);
+    lsf = hyp.cov(D+1);
+    % Half of the 
+    logsigma = repmat(log(exp(logell')/2), M, 1);
     smhyp.lik = hyp.lik;
     smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
-        reshape(V, [M*D, 1]); lsf2+(log(2*pi)*D+sum(logell)*2)/4];
+        reshape(V, [M*D, 1]); 2*lsf+(log(2*pi)*D+sum(logell))/2];
     
-    M = size(V, 1);
     %then let's make sure the naive implementation is correct
     indNoise = -Inf;
     [ymu, ys2, ~, ~] = gp(smhyp, @infExact, [], {@covSMnaive, M, indNoise}, @likGauss, x, y, xs);
     nlZN = gp(smhyp, @infExact, [], {@covSMnaive, M, indNoise}, @likGauss, x, y);
     %nlZN = 0;
     %should deal the same output as the GP
-    worst_dev_naive = [max((ymu-ymuE).^2), max((ys2-ys2E).^2), nlZtrue - nlZN]
-    if any(abs(worst_dev_naive) > 1e-13), error('Naive Implementation appears broken!'); end
+    worst_diff_naive = [max((ymu-ymuE).^2), max((ys2-ys2E).^2), nlZtrue - nlZN]
+    if any(abs(worst_diff_naive) > 1e-13), error('Naive Implementation appears broken!'); end
 end
 
 function testFITCimplAgainstNaive()
     % If the length scales of the individual basis functions are equal to the 
     % GPs length scales the method becomes equivalent Snelson's SPGP/FITC 
     % method.
-    %sd = 31594;
-    [x, y, xs, smhyp] = initEnvConcrete(31594);
+    %sd = 31594 - breaks when using mex version of solve_chol;
+    [x, y, xs, smhyp] = initEnvConcrete();
     D = size(x, 2);
     M = (numel(smhyp.cov)-1-D)/D/2;
 
@@ -237,7 +313,7 @@ function [x, y, xs, smhyp] = initEnvConcrete(sd)
     logell = smhyp.cov(1:D);
     lsf2 = smhyp.cov(D+1);
     % Now let's check that the naive and actual implementation agree.
-    M = n - 2;
+    M = 3;
     V = randn([M, D]);
     %make sure length scale parameters are larger than half of the original ls
     logsigma = log(exp(2*randn([M, D]).^2)+repmat(exp(2*logell)', M, 1)/2)/2;

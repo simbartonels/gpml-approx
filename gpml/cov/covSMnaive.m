@@ -5,7 +5,7 @@ function K = covSMnaive(M, logIndNoise, hyp, x, z, i)
     % logIndNoise - noise on the inducing variables on a log scale
     % Let g be Walder's ARD SE. The covariance function is parameterized as:
     %
-    % k(x,z) = delta(x, z) * g(x, z, [S[0], sf2]) + ...
+    % k(x,z) = sf * delta(x, z) * g(x, z, [S[0], sf]) + ...
     %               (1 - delta(x, z)) * u(V,x)'*inv(Upsi)*u(V, z)
     %
     % where V is a matrix of inducing points, u(V, x)[i] = g(x, V[i], S[i]),S 
@@ -15,7 +15,8 @@ function K = covSMnaive(M, logIndNoise, hyp, x, z, i)
     %       log(ell_2),
     %        .
     %       log(ell_D) ]
-    % S = [ s0; s1; s2; ... sM], v an M-dimensional vector and V = [v1; v2; ...
+    % s_j = log( S[j]-ell/2 )
+    % S = [ s; s1; s2; ... sM], v an M-dimensional vector and V = [v1; v2; ...
     % vM]. Then the hyperparameters are:
     % 
     % hyp = [flat(S), flat(V), log(sqrt(sf2))]
@@ -28,31 +29,29 @@ function K = covSMnaive(M, logIndNoise, hyp, x, z, i)
     if nargin<=numMetaArgs()+2, z = []; end                                   % make sure, z exists
     xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;        % determine mode
 
-    [n,D] = size(x);                                       % signal variance
-    sz = size(z, 1);
+    [n, D] = size(x);
     logll = hyp(1:D);                               % characteristic length scale
     lsf = hyp(2*M*D+D+1);
-    %Walder uses a slightly different ARD SE where the sigmas influence the 
-    %length scale
-    actlsf = lsf-(log(2*pi)*D+sum(logll, 1)*2)/4;
     if dg                                                               % vector kxx
-        K = covSEard([logll; actlsf], x, 'diag');
+        K = exp(lsf) * ones(n, 1) / sqrt(prod(exp(logll))*(2*pi)^D);
     else
         [~, Upsi, Uvx] = covSM(M, hyp, x);
         % add noise for the inducing inputs
         indNoise = exp(logIndNoise);
-        Upsi = Upsi + indNoise * eye(M);
-        Lpsi = chol(Upsi);
-        clear Upsi;
+        Lpsi = chol(Upsi + indNoise * eye(M));
+        %clear Upsi;
         if xeqz, 
             %this is to ensure that K is positive definite
             K = Lpsi'\Uvx;
             K = K'*K;
             %K = Uvx'*solve_chol(Lpsi, Uvx);
             %set diagonal to what Walder's ARD SE would produce
-            K(logical(eye(size(K)))) = covSEard([logll; actlsf], x, 'diag'); 
+            K(logical(eye(size(K)))) = ...
+                exp(lsf) * ones(n, 1) / sqrt(prod(exp(logll))*(2*pi)^D); 
         else
             Uvz = covSM(M, hyp, x, z);
+            % TODO: could this be one of the reasons why solve_chol.mex
+            % crashes? Maybe K needs to be initialized properly.
             K = Uvx'*solve_chol(Lpsi, Uvz);
         end
     end
