@@ -70,84 +70,60 @@ else
         end
     end
 end
-if nargin>4                                                   % derivatives
-    if dg
+if nargin>4        
         K = dKd(K, di, D, M);
-    else
-        if xeqz
-            K = dKd(K, di, D, M);
-            %lengthscale derivatives?
-            if di <= D
-                d = di;
-                % this is what we add during initialization to sigma
-                p2 = ell(d)/2;
-                for k=1:M
-                    p = sigma(k, d);
-                    for l=1:n
-                        u = ((V(k, d) - x(l, d))/p)^2-1/p;
-                        u = u * Uvx(k, l)/2;
-                        % chain rule
-                        u = p2 * u;
-                        Uvx(k, l) = u;
-                    end
-                end
-                
-                % In the computation of Upsi ell actually cancels out. It
-                % is added during initialization and substracted when
-                % computing temp. Therefore the gradient is 0.
-                Upsi = zeros(size(Upsi));
-            elseif di >= D+1 && di <= M*D+D
-                [d, j] = getDimensionAndIndex(di, D, M);
-                p2 = sigma(j, d);
-                Uvx = dAdl(Uvx, p2, d, x, V, j);
-                
-                p = p2+sigma(:, d)-ell(d);
-                dUpsi = dAdl(Upsi, p, d, V, V, j);
-                
-                % chain rule
-                p2 = p2 - ell(d)/2; % that half has no influence on the gradient
-                Uvx = p2 * Uvx;
-                dUpsi(j, :) = p2 * dUpsi(j, :);
-                dUpsi(:, j) = dUpsi(j, :);
-                dUpsi(j, j) = 2 * dUpsi(j, j);
-                Upsi = dUpsi;
-            elseif di >= M*D+D+1 && di <=2*M*D+D
-                %inducing point derivatives
-                [d, j] = getDimensionAndIndex(di, D, M);
-                dUvx = zeros(size(Uvx));
-                sig = sigma(j, d);
-                dUvx(j, :) = (-V(j, d) + x(:, d))/sig .* Uvx(j, :)';
-                Uvx = dUvx;
-                
-                dUpsi = zeros(size(Upsi));
-                p2 = sigma(j, d);
-                p = p2+sigma(:, d)-ell(d);
-                dUpsi(j, :) = (-V(j, d) + V(:, d)) .* Upsi(j, :)' ./p;
-                dUpsi(:, j) = dUpsi(j, :);
-                Upsi = dUpsi;
-            elseif di == 2*M*D+D+1
-                Uvx = zeros(size(Uvx));
-                %chain rule because sf2 is square root and log 
-                Upsi = -Upsi;
+        %lengthscale derivatives?
+        if di <= D
+            d = di;
+            % this is what we add during initialization to sigma
+            p2 = ell(d)/2;
+            dUvx = zeros(size(Uvx));
+            for k = 1:M
+                %dAdl returns actually only a vector. the rest is 0
+                dUvx = dUvx + dAdl(Uvx, sigma(k, d), d, x, V, k);
             end
-        else
-            if di <= D
-                K = zeros(size(K));
-            elseif di >= D+1 && di <= M*D+D
-                [d, j] = getDimensionAndIndex(di, D, M);
-                K = dUdl(K, hyp(di), d, j, z, V);
-            elseif di >= M*D+D+1 && di <=2*M*D+D
-                %inducing point derivatives
-                [d, j] = getDimensionAndIndex(di, D, M);
-                dUvz = zeros(size(K));
-                sig = sigma(j, d);
-                dUvz(j, :) = (-V(j, d) + z(:, d))/sig .* K(j, :)';
-                K = dUvz;
-            elseif di == 2*M*D+D+1
-                K = zeros(size(K));
-            end
+            % chain rule
+            Uvx = p2 * dUvx;
+
+
+            % In the computation of Upsi ell actually cancels out. It
+            % is added during initialization and substracted when
+            % computing temp. Therefore the gradient is 0.
+            Upsi = zeros(size(Upsi));
+        elseif di >= D+1 && di <= M*D+D
+            [d, j] = getDimensionAndIndex(di, D, M);
+            p2 = sigma(j, d);
+            Uvx = dAdl(Uvx, p2, d, x, V, j);
+
+            p = p2+sigma(:, d)-ell(d);
+            dUpsi = dAdl(Upsi, p, d, V, V, j);
+
+            % chain rule
+            p2 = p2 - ell(d)/2; % that half has no influence on the gradient
+            Uvx = p2 * Uvx;
+            dUpsi(j, :) = p2 * dUpsi(j, :);
+            dUpsi(:, j) = dUpsi(j, :);
+            dUpsi(j, j) = 2 * dUpsi(j, j);
+            Upsi = dUpsi;
+        elseif di >= M*D+D+1 && di <=2*M*D+D
+            %inducing point derivatives
+            [d, j] = getDimensionAndIndex(di, D, M);
+            dUvx = zeros(size(Uvx));
+            sig = sigma(j, d);
+            dUvx(j, :) = (-V(j, d) + x(:, d))/sig .* Uvx(j, :)';
+            Uvx = dUvx;
+
+            dUpsi = zeros(size(Upsi));
+            p2 = sigma(j, d);
+            p = p2+sigma(:, d)-ell(d);
+            dUpsi(j, :) = (-V(j, d) + V(:, d)) .* Upsi(j, :)' ./p;
+            dUpsi(:, j) = dUpsi(j, :);
+            Upsi = dUpsi;
+        elseif di == 2*M*D+D+1
+            Uvx = zeros(size(Uvx));
+            %chain rule because sf2 is square root and log 
+            Upsi = -Upsi;
         end
-    end
 end
 end
 
@@ -155,20 +131,6 @@ function z = g(x, y, s, D)
     z = sq_dist(diag(1./sqrt(s))*x',diag(1./sqrt(s))*y');
     z = exp(-z/2);
     z = z/sqrt(prod(s)*(2*pi)^D);
-end
-
-function lsf = computeLogRootSignalVariance(lsf, logll)
-    % COMPUTELOGROOTSIGNALVARIANCE Computes the signal variance depending on
-    % the length scales and the given length scale parameter for the SEard.
-    % lsf2 is the log square root signal variance.
-    % logll are log length scales.
-    
-
-    % ARDse squares the signal variance. Therefore we need to divide TWICE 
-    % by 2. Also the sum needs to be multiplied with two since ARDse works 
-    % with square root length scales.
-    D = size(logll, 2);
-    lsf = lsf - (log(2*pi)*D+2*sum(logll, 2))/4;
 end
 
 function dK = dKd(K, di, D, M)
@@ -182,24 +144,6 @@ function dK = dKd(K, di, D, M)
             %derivative of the amplitude
             dK = K;
         end
-end
-
-function dUvx = dUdl(Uvx, logl, d, j, x, V)
-    % DUDL Computes the derivative of Uvx with respect to the inducing
-    % points' length scales.
-    % Uvx: the matrix
-    % logl: log square root length scale
-    % d: the dimension
-    % j: index of the corresponding basis vector
-    % x: input matrix
-    % V: inducing input matrix
-    
-    % the parameter
-    p = exp(logl);
-    dUvx = dAdl(Uvx, p, d, x, V, j);
-    % need to apply chain rule since the parameter is optimized
-    % on a log scale and is a square root
-    dUvx = dUvx * p;
 end
 
 function dA = dAdl(A, p, d, x, z, i)
@@ -220,20 +164,4 @@ function [d, j] = getDimensionAndIndex(di, D, M)
     % which dimension the parameter belongs to
     d = (di-D-j)/M+1;
     d = mod(d-1, D)+1;
-end
-
-function [K, Upsi, Uvx] = performErrorHandling(n, M, z, xeqz, gradients)
-    disp('All inducing input length scales must be longer than half the corresponding length scale!');
-    %error('All inducing input length scales must be longer than half the corresponding length scale!');
-    if xeqz
-        K = zeros([n, 1]);
-    else
-        K = zeros([M, size(z, 1)]);
-    end
-    Upsi = eye(M);
-    Uvx = zeros([M, n]);
-    if gradients
-        % gradients are all 0
-        Upsi = zeros([M, M]);
-    end
 end

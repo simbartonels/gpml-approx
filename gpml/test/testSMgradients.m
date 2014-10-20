@@ -6,9 +6,9 @@ function testSMgradients()
     mydir = which(me); mydir = mydir(1:end-2-numel(me));        % where am I located
     addpath([mydir,'util'])
 
-    testdK();
+    %testdK();
     
-    testdUpsi();
+    %testdUpsi();
 
     testdUvx();
 end
@@ -47,26 +47,26 @@ end
 function testdUvx()
 n = 5;
 D = 3;
-M = n;
+M = 3;
 [x, smhyp] = initStuff(n, D, M);
 for i = 1:D
     for k = 1:M
         for j = 1:n
-            checkLsGradient(M, D, smhyp, x, 3, i, j, k);
+            checkLsGradient(M, D, smhyp, x, 3, i, k, j);
         end
     end
 end
 for i = D+1:M*D+D
     for k = 1:M
         for j = 1:n
-            checkInducingLsGradient(M, D, smhyp, x, 3, i, j, k);
+            checkInducingLsGradient(M, D, smhyp, x, 3, i, k, j);
         end
     end
 end
 for i = D+M*D+1:D+2*M*D+1
     for k = 1:M
         for j = 1:n
-            checkGradientRandomx0(M, D, smhyp, x, 3, i, j, k);
+            checkGradientRandomx0(M, D, smhyp, x, 3, i, k, j);
         end
     end
 end
