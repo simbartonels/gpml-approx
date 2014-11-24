@@ -1,4 +1,4 @@
-function [s, gpi, b] = initFastFood(m, D, hyp)
+function [s, g, randpi, b] = initFastFood(m, D, hyp)
 % Initializes all the necessary matrices for Fast Food.
 % m - the number of blocks to use, i.e. m*D is the total number of basis
 % functions.
@@ -23,10 +23,9 @@ function [s, gpi, b] = initFastFood(m, D, hyp)
     end
     s = sqrt(s);
     g = randn([m*D, 1]);
-    gpi = g.*randpi(:);
     for j = 1:m
         idx = (1+D*(j-1)):D*j;
-        no = norm(gpi(idx, 1), 'fro');
+        no = norm(g(idx, 1), 'fro');
         %TODO: could be a typo
         %no = sqrt(no);
         s(idx)=s(idx)/no;

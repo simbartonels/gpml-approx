@@ -15,18 +15,20 @@ function testBasisFunctionWorksProperly()
     [n, D] = size(x);
     % for fast food the 1st parameter is the length scale!
     ell = exp(hyp.cov(2));
-    [s, gpi, b] = initFastFood(M, D, hyp.cov);
+    [s, g, randpi, b] = initFastFood(M, D, hyp.cov);
     d = D;
     D = 2^nextpow2(D);
     target = zeros(M*D, n);
     z = [x/ell zeros(n, D-d)];
     for j = 1:M
         idx = (1+(j-1)*D):(j*D);
-        Z = diag(s(idx))*hadamard(D)*diag(gpi(idx))*hadamard(D)*diag(b(idx));
+        P = eye(D);
+        P = P(randpi(idx), :);
+        Z = diag(s(idx))*hadamard(D)*diag(g(idx)) * P *hadamard(D)*diag(b(idx));
         target(idx, :) = Z*z';
     end
     target = [cos(target); sin(target)];
-    actual = degFastFoodiso(s, gpi, b, hyp.cov, x);
+    actual = degFastFoodiso(s, g, randpi, b, hyp.cov, x);
     if any(any(abs(target - actual) > 1e-14))
         %target - actual
         max_diff = max(max(abs(target-actual)))
@@ -41,18 +43,18 @@ function testMatrixGradients()
     n = 1;
     x = randn([n, D]);
     m = 1;
-    [s, gpi, b] = initFastFood(m, D, hyp.cov);
+    [s, g, randpi, b] = initFastFood(m, D, hyp.cov);
     for di = 1:2
-        fun = @(h) matrixGradientCheckFunction(h, x, s, gpi, b, hyp.cov, di);
+        fun = @(h) matrixGradientCheckFunction(h, x, s, g, randpi, b, hyp.cov, di);
         checkMatrixGradients(fun, hyp.cov(di), m, n);
     end
     disp('matrix gradients check successful');
 end
 
-function [K, dK] = matrixGradientCheckFunction(h, z, s, gpi, b, hyp, di)
+function [K, dK] = matrixGradientCheckFunction(h, z, s, g, randpi, b, hyp, di)
     hyp(di) = h;
-    K = degFastFoodiso(s, gpi, b, hyp, z);
-    dK = degFastFoodiso(s, gpi, b, hyp, z, di);
+    K = degFastFoodiso(s, g, randpi, b, hyp, z);
+    dK = degFastFoodiso(s, g, randpi, b, hyp, z, di);
 end
 
 function testGradients()
@@ -60,9 +62,9 @@ function testGradients()
     hyp.cov = [hyp.cov(1); hyp.cov(2)];
     D = size(x, 2);
     m = 2;
-    [s, gpi, b] = initFastFood(m, D, hyp.cov);
+    [s, g, randpi, b] = initFastFood(m, D, hyp.cov);
     %s = ones([m*d, 1])/sqrt(D);
-    cov_deg = {@covDegenerate, {@degFastFoodiso, s, gpi, b}};
+    cov_deg = {@covDegenerate, {@degFastFoodiso, s, g, randpi, b}};
 
     options = optimoptions(@fmincon,'Algorithm','interior-point',...
         'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);
@@ -80,8 +82,8 @@ function testApproximationQuality()
     %sd = 22965
     %sd = 13719
     rng(sd);
-    D = 4;
-    m = 256;
+    D = 2;
+    m = 512;
     n = 1; %m*D+1;
     z = 1;
 
@@ -96,16 +98,16 @@ function testApproximationQuality()
     hyp.lik = ffhyp.lik;
     hyp.cov = [log(ls); log(sf2)/2];
 
-    [s, gpi, b] = initFastFood(m, D, ffhyp.cov);
+    [s, g, randpi, b] = initFastFood(m, D, ffhyp.cov);
     %s = ones([m*d, 1])/sqrt(D);
-    cov_deg = {@covDegenerate, {@degFastFoodiso, s, gpi, b}};
+    cov_deg = {@covDegenerate, {@degFastFoodiso, s, g, randpi, b}};
     weight_prior = feval(cov_deg{:}, ffhyp.cov);
     phi = feval(cov_deg{:}, ffhyp.cov, [], x);
     phiz = feval(cov_deg{:}, ffhyp.cov, [], xs);
     K = phi' * diag(weight_prior) * phiz;
     Korig = covSEiso(hyp.cov, x, xs);
-    diff = sum(sum(abs((Korig - K).^2))/(n*z))
-    if abs(diff) > 1e-5, error('Approximation quality is too bad!'); end
+    diff = abs(Korig - K)
+    if diff > 0.05, error('Approximation quality is too bad!'); end
 end
 
 function testHadamardMultiplication()
@@ -120,13 +122,15 @@ function testHadamardMultiplication()
     x = rand(n, D) / 2;
     hyp.lik = lnoise;
     hyp.cov = [lsf; lls];
-    [s, gpi, b] = initFastFood(m, D, hyp.cov);
-    cov_deg = {@covDegenerate, {@degFastFoodiso, s, gpi, b}};
+    [s, g, randpi, b] = initFastFood(m, D, hyp.cov);
+    cov_deg = {@covDegenerate, {@degFastFoodiso, s, g, randpi, b}};
     Kimpl = feval(cov_deg{:}, hyp.cov, [], x);
 
     H = ones(D);
     H(4) = -1;
-    W = exp(-lls)*diag(s)*H*diag(gpi)*H*diag(b)*x';
+    P = eye(D);
+    P = P(randpi, :);
+    W = exp(-lls)*diag(s)*H*diag(g)*P*H*diag(b)*x';
     K = [cos(W); sin(W)];
     if sum((K - Kimpl).^2) > 1e-30, ...
         error('Something is wrong with Hadamard multiplication'); end

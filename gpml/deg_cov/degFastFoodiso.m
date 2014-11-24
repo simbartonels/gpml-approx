@@ -1,27 +1,28 @@
-function K = degFastFood(s, gpi, b, hyp, z_org, di)
+function K = degFastFoodiso(s, g, randpi, b, hyp, z_org, di)
 
 % Implementation of Fast Food.
 % Args:
 % s - the (diagonal) scale matrix (as vector)
-% gpi - the product of G and Pi (also a diagonal therefore as vector)
+% g - the (diagonal) Gaussian random matrix (as vector)
+% pi - the permutation matrix (as vector)
 % b - the (diagonal) random binary matrix (as vector)
 % Hyper-parameters:
 % [log(signal variance); log(lengthscale);]
 % 
 % See also deg_covFunctions.M.
 
-if nargin<4, K = '(2)'; return; end              % report number of parameters
+if nargin<meta_args(), K = '(2)'; return; end              % report number of parameters
 sf2 = exp(2*hyp(1));                               % signal variance
 mD = size(s, 1);
-if nargin == 4
+if nargin == meta_args()
    % return weight prior
    K = sf2*ones(2*mD, 1)/mD;
    return;
-elseif nargin == 5
+elseif nargin == meta_args()+1
     % compute phi(z)
-    W = multiplyW(z_org, mD, s, gpi, b, hyp);
+    W = multiplyW(z_org, mD, s, g, randpi, b, hyp);
     K = [cos(W); sin(W)];
-elseif nargin==6                                              % derivatives
+elseif nargin==meta_args()+2                                              % derivatives
     %error('Optimization of hyperparameters not implemented.')
     if isempty(z_org)
         % compute derivative of weight prior
@@ -33,7 +34,7 @@ elseif nargin==6                                              % derivatives
     else
         % derivatives of phi(z)
         if di == 2
-            W = multiplyW(z_org, mD, s, gpi, b, hyp);
+            W = multiplyW(z_org, mD, s, g, randpi, b, hyp);
             K = [(sin(W).*W); (-cos(W).*W)];
         else
             K = zeros([2*mD, size(z_org, 1)]);
@@ -42,11 +43,16 @@ elseif nargin==6                                              % derivatives
 end
 end
 
-function W = multiplyW(z_org, mD, s, gpi, b, hyp)
+function N = meta_args()
+    N = 5;
+end
+
+function W = multiplyW(z_org, mD, s, g, randpi, b, hyp)
     [sz, d] = size(z_org);
     D = 2^nextpow2(d);
     ell = exp(hyp(2));
     %TODO: might be this padding is not necessary since fwht does it by itself!
+    %TODO: is the division at a later stage (before S) more efficient?
     z = [z_org/ell zeros(sz, D-d)];
     m = mD/D;
     W = zeros(mD, sz);
@@ -55,7 +61,9 @@ function W = multiplyW(z_org, mD, s, gpi, b, hyp)
         %it appears the hadamard transform in matlab is scaled
         w = fwht(diag(b(idx))*z', D, 'hadamard')*D;
         %w = hadamard(D) * diag(b(idx))* z';
-        w = fwht(diag(gpi(idx))*w, D, 'hadamard')*D;
+        P = eye(D);
+        P = P(randpi(idx), :);
+        w = fwht(diag(g(idx))*P*w , D, 'hadamard')*D;
         %w = hadamard(D) * diag(gpi(idx))*w;
         W(idx, :) = diag(s(idx))*w;
         %W(idx, :) = diag(s(idx)./ell)*w;
