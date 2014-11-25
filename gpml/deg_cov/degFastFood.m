@@ -4,7 +4,7 @@ function K = degFastFood(s, g, randpi, b, hyp, z_org, di)
 % Args:
 % s - the (diagonal) scale matrix (as vector)
 % g - the (diagonal) Gaussian random matrix (as vector)
-% pi - the permutation matrix (as vector)
+% randpi - the permutation matrix (as vector)
 % b - the (diagonal) random binary matrix (as vector)
 % Hyper-parameters:
 % [log(signal variance); log(lengthscale1); ...; log(lengthscaleD)]

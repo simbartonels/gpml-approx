@@ -25,7 +25,7 @@ likstr = lik; if ~ischar(lik), likstr = func2str(lik); end
 if ~strcmp(likstr,'likGauss')               % NOTE: no explicit call to likGauss
   error('FITC inference only possible with Gaussian likelihood');
 end
-cov1 = cov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
+%cov1 = cov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
 %if ~strcmp(cov1,'covFITC'); error('Only covFITC supported.'), end    % check cov
 
 [diagK,Kuu,Ku] = feval(cov{:}, hyp.cov, x);         % evaluate covariance matrix
@@ -33,8 +33,8 @@ m = feval(mean{:}, hyp.mean, x);                          % evaluate mean vector
 [n, D] = size(x); nu = size(Kuu,1);
 
 sn2  = exp(2*hyp.lik);                              % noise variance of likGauss
+% TODO: inducing noise!
 snu2 = 1e-6*sn2;                              % hard coded inducing inputs noise
-%snu2 = 0;
 Luu  = chol(Kuu + snu2*eye(nu));                       % Kuu + snu2*I = Luu'*Luu
 % = Lvv if snu2 == 0
 V  = Luu'\Ku;                                     % V = inv(Luu')*Ku => V'*V = Q
@@ -53,7 +53,8 @@ be = Lu'\(V*r);
 % = (Svv/sn)^(-1)*Vvx*(sn2*Gamma)^(-1)*y = beta/sn
 iKuu = solve_chol(Luu,eye(nu));                       % inv(Kuu + snu2*I) = iKuu
 post.alpha = Luu\(Lu\be);                      % return the posterior parameters
-post.L  = solve_chol(Lu*Luu,eye(nu)) - iKuu; % Sigma-inv(Kuu)
+temp = solve_chol(Lu*Luu,eye(nu));
+post.L  = temp - iKuu; % Sigma-inv(Kuu)
 post.sW = [];                                                  % unused for FITC
 if nargout>1                                % do we want the marginal likelihood
   nlZ = sum(log(diag(Lu))) + (sum(log(dg)) + n*log(2*pi) + r'*r - be'*be)/2; 
