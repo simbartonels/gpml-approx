@@ -4,12 +4,12 @@ function testFastFoodlibGP()
     m = 4;
     intD = nextpow2(D);
     M = m*intD; %not *2 because we only need it for the matrices
-    [alpha, L, nlZ, s, g, pi, b] = infFastFoodmex(2*M, unwrap(hyp), x, y);
+    [alpha, L, nlZ, s, g, randpi, b] = infFastFoodmex(2*M, unwrap(hyp), x, y);
     s = reshape(s, [M, 1]);
     g = reshape(g, [M, 1]);
-    pi = reshape(pi, [M, 1]);
+    randpi = reshape(randpi, [M, 1]);
     b = reshape(b, [M, 1]);
-    degCov = {@degFastFood, s, g, pi, b};
+    degCov = {@covDegenerate, {@degFastFood, s, g, randpi, b}};
     [post, nlZ_o] = infExactDegKernel(hyp, [], degCov, @likGauss, x, y);
     alpha_o = post.alpha;
     L_o = post.L;
