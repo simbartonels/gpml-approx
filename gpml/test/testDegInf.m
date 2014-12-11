@@ -1,21 +1,39 @@
 function testDegInf()
-testdA();
+    testdA();
+    testdLLH();
+end
+
+function testdLLH()
+    [x, y, ~, hyp] = initEnv();
+    hyp.cov = hyp.cov(1:2);
+    m = 3;
+    D = size(x, 2);
+    S = initSS(m, D);
+    options = optimoptions(@fmincon,'Algorithm','interior-point',...
+        'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);
+    cov_deg = {@covDegenerate, {@degSS, S}};
+    optfunc = @(hypx) optimfunc(hypx, hyp, @infExactDegKernel, [], cov_deg, @likGauss, x, y);
+
+    %derivative check
+    fmincon(optfunc,...
+               unwrap(hyp),[],[],[],[],[],[],@unitdisk,options);
+    disp('derviative check succesfully passed');
 end
 
 function testdA()
-[sd, n, D, x, y, xs, logell, lsf2, lsn2] = initEnv()
+[x, y, xs, hyp] = initEnv();
 %lsf2 = 1;
 %lsn2 = 0
 %logell = 0
 %sd = 24713; %=18071
-rng(sd);
-logell = logell(1);
+%logell = logell(1);
 m = 3;
-S = initSS(m, D, exp(logell));
-covhyp = [logell, lsf2];
+D = size(x, 2);
+S = initSS(m, D);
+covhyp = hyp.cov; %[logell, lsf2];
 options = optimoptions(@fmincon,'Algorithm','interior-point',...
     'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);
-optfunc = @(a) computeAdA(a, S, covhyp, x, exp(2*lsn2));
+optfunc = @(a) computeAdA(a, S, covhyp, x, exp(2*hyp.lik));
 %fplot(optfunc, [0, 2]);
 %derivative check
 fmincon(optfunc,...

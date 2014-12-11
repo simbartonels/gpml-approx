@@ -23,8 +23,7 @@ sn2 = exp(2*hyp.lik);                               % noise variance of likGauss
 Phi = feval(degCov{:}, hyp.cov, [], x);
 if size(Phi, 1) > n; error('The feature space dimensionality is greater than the number of inputs!'); end
 A = Phi*Phi'; %+sn2*SigmaInv;                      % evaluate covariance matrix
-M = size(Phi, 1);
-diagidx = logical(eye(M));
+diagidx = logical(eye(size(Phi, 1)));
 A(diagidx) = A(diagidx) + sn2*sigmainv;
 L = chol(A);
 clear A;
@@ -47,13 +46,15 @@ if nargout>1                               % do we want the marginal likelihood?
   %lemma
   M = L'\Phiy;
   logdetA = 2*sum(log(diag(L)));
+  %M'*M = Phiy'*alpha (?)
+  %M'*M is Matrix-Matrix-multiplication!!!
   yyMM = ((y-m)'*(y-m)-M'*M)/sn2;
   nlZ = yyMM + logdetA ...
       +sum(log(weight_prior))+n*log(2*pi)+(n-size(L, 1))*(2*hyp.lik);
   nlZ = nlZ/2;
   if nargout>2                                         % do we want derivatives?
     dnlZ = hyp;
-    invAPhiy = L\M;
+    invAPhiy = post.alpha;
     for i = 1:numel(hyp.cov)
         dsigma = feval(degCov{:}, hyp.cov, [], [], i);
         dPhi = feval(degCov{:}, hyp.cov, [], x, i);
@@ -62,7 +63,8 @@ if nargout>1                               % do we want the marginal likelihood?
         dlogdetA = trace(solve_chol(L, dA)); % * detA / detA
         %dlogdetSigma = trace(SigmaInv * diag(dSigma));
         dlogdetSigma = sum(sigmainv .* dsigma);
-        dMM = 2*invAPhiy'*dPhi*y - invAPhiy' * dA * invAPhiy;
+        %dMM = 2*invAPhiy'*dPhi*y - invAPhiy' * dA * invAPhiy;
+        dMM = invAPhiy'*(2*dPhi*y - dA * invAPhiy);
         dnlZ.cov(i) = (-dMM/sn2 + dlogdetA + dlogdetSigma)/2;
     end
     % TODO: can this be more efficient?
