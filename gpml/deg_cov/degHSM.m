@@ -115,7 +115,7 @@ end
 
 function s = spectralDensity(rSqrd, D, sf)
     %see Rasmussen p.154 above (7.11)
-    s = sf*sqrt(2*pi)*(LS()^D)*exp(-LS()^2*rSqrd/2);
+    s = sf*(sqrt(2*pi)^D)*(LS()^D)*exp(-LS()^2*rSqrd/2);
 end
 
 function retval = LS()

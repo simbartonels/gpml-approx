@@ -1,9 +1,52 @@
-function testHSM()
+function testHSM2()
+    testBasisFunctionImpl();
     testSEard();
-    testToyExample();
-    testGradients2();
-    testGradients();
-    testAgainstNaiveImplementation();
+end
+
+function testBasisFunctionImpl()
+    sd = floor(rand(1) * 32000)
+%    sd = 12620
+    %sd = 10184
+    rng(sd);
+    D = 3;
+    M = 6;
+    n = 1;
+    x = rand(n, D) / 2;
+    logsf2 = 0;
+    logls = 1./(1+randn(D, 1).^2)-3
+    cov2hyp = [logls; logsf2];
+    L = ones(1, D);
+    [J, lambda] = initHSM(M, D, L);
+    cov2 = {@degHSM2, M, L, J, lambda};
+    phix = feval(cov2{:}, cov2hyp, x);
+    weight_prior = feval(cov2{:}, cov2hyp);    
+    sf = exp(2*logsf2);
+    for m = 1:M^D
+        bf = 1;
+        s = sf;
+        for d = 1:D
+            loglsd = logls(d);
+            sqrtlambda = pi*J(d, m)/L(d)/2;
+            spec_dens = @(r) sqrt(2*pi)*exp(loglsd)*exp(-exp(2*loglsd)*r.^2/2);
+            s = s * spec_dens(sqrtlambda);
+            
+            bf = bf * sin(pi * J(d, m) * (x(d)+L(d))/2/L(d))/sqrt(L(D));
+        end
+        
+        if abs(phix(m) - bf) > 1e-15
+            m
+            phix
+            bf
+            error('Somethings wrong in the computation of the basis functions.');
+        end
+        if abs(weight_prior(m) - s) > 1e-15
+            weight_prior
+            s
+            m
+            error('Somethings wrong in the computation of Gamma.');
+        end
+
+    end
 end
 
 function testSEard()
@@ -11,8 +54,8 @@ function testSEard()
 %    sd = 12620
     %sd = 10184
     rng(sd);
-    D = 2;
-    M = 96;
+    D = 3;
+    M = 24;
     n = 1;
     x = rand(n, D) / 2;
     z = rand(1, D) / 2;
@@ -48,6 +91,15 @@ function testSEard()
     result = feval(cov{:}, hsmhyp.cov, x, z);
     L = b;
     [J, lambda] = initHSM(M, D, L);
+    cov2 = {@degHSM2, M, L, J, lambda};
+    cov2hyp = hyp.cov;
+    phix = feval(cov2{:}, cov2hyp, x);
+    phiz = feval(cov2{:}, cov2hyp, z);
+    weight_prior = feval(cov2{:}, cov2hyp);
+    result_impl2 = phix'*diag(weight_prior)*phiz;
+
+    diff = result_impl2 - covSEard(hyp.cov, x, z)
+    
     cov2 = {@degHSM, M, L, J, lambda};
     cov2hyp = hyp.cov;
     phix = feval(cov2{:}, cov2hyp, x);
@@ -63,6 +115,7 @@ function testSEard()
 end
 
 function testGradients2()
+    error('copy&paste code');
     D = 2;
     hyp.lik = 0;
     hyp.cov = [zeros([D, 1]); 0];
@@ -82,6 +135,7 @@ function testGradients2()
 end
 
 function testGradients()
+    error('copy&paste code');
     [x, y, ~, hyp] = initEnv();
     M = 2;
     D = size(x, 2);
@@ -100,10 +154,12 @@ function testGradients()
 end
 
 function testAgainstNaiveImplementation()
+    error('copy&paste code');
     error('Not implemented!');
 end
 
 function testToyExample()
+    error('copy&paste code');
 D = 1;
 M = 64;
 n = 1;
