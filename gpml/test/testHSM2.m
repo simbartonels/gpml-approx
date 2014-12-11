@@ -1,6 +1,7 @@
 function testHSM2()
     testBasisFunctionImpl();
     testSEard();
+    testGradients();
 end
 
 function testBasisFunctionImpl()
@@ -53,6 +54,8 @@ function testSEard()
     sd = floor(rand(1) * 32000)
 %    sd = 12620
     %sd = 10184
+    %Seems like we have a problem with this seed.
+    %sd = 2866
     rng(sd);
     D = 3;
     M = 24;
@@ -135,14 +138,13 @@ function testGradients2()
 end
 
 function testGradients()
-    error('copy&paste code');
     [x, y, ~, hyp] = initEnv();
     M = 2;
     D = size(x, 2);
     L = 1.2 * max(abs(x));%rand(1, D);
     [J, lambda] = initHSM(M, D, L);
 
-    cov_deg = {@covDegenerate, {@degHSM, M, L, J, lambda}};
+    cov_deg = {@covDegenerate, {@degHSM2, M, L, J, lambda}};
 
     options = optimoptions(@fmincon,'Algorithm','interior-point',...
         'DerivativeCheck','on','GradObj','on', 'MaxFunEvals', 1);

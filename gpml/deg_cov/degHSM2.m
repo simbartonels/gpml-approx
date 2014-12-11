@@ -25,11 +25,10 @@ elseif nargin==7                                                        % deriva
     if isempty(z)
         %gradients of the weight prior
         if di <= D
-            error('To do: implement!');
-            K =  zeros([M^D, 1]);
+            K = getWeightPriorLengthScaleGradient(J, M, D, L, hyp, di);
         elseif di == D+1
             %the derivative is just the weight prior itself
-            K = getWeightPrior(lambda, M, D, L, hyp);
+            K = getWeightPrior(J, M, D, L, hyp);
         else
             error('Unknown hyper-parameter!');
         end
@@ -84,6 +83,16 @@ function K = getWeightPrior(J, M, D, L, hyp)
     for k = 1:M^D
         lambda = pi^2*((J(:, k)'./(2*L)).^2.*ell');
         K(k) = spectralDensity(sum(lambda), D, sf, ell);
+    end
+end
+
+function K = getWeightPriorLengthScaleGradient(J, M, D, L, hyp, di)
+    sf = exp(hyp(D+1));
+    ell = exp(2 * hyp(1:D));
+    K = zeros(M^D, 1);
+    for k = 1:M^D
+        lambda = pi^2*((J(:, k)'./(2*L)).^2.*ell');
+        K(k) = spectralDensity(sum(lambda), D, sf, ell) * (1 - pi^2*((J(di, k)/(2*L(di)))^2)*ell(di));
     end
 end
 
