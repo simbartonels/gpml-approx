@@ -21,6 +21,7 @@ if nargin == meta_args()
 elseif nargin == meta_args()+1
     % compute phi(z)
     W = multiplyW(z_org, mD, s, g, randpi, b, hyp);
+    %TODO: W is padded!
     K = [cos(W); sin(W)];
 elseif nargin==meta_args()+2                                             % derivatives
     %error('Optimization of hyperparameters not implemented.')

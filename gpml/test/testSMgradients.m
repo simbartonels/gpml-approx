@@ -6,9 +6,9 @@ function testSMgradients()
     mydir = which(me); mydir = mydir(1:end-2-numel(me));        % where am I located
     addpath([mydir,'util'])
 
-    %testdK();
+    testdK();
     
-    %testdUpsi();
+    testdUpsi();
 
     testdUvx();
 end

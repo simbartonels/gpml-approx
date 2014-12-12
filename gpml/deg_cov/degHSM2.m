@@ -92,6 +92,8 @@ function K = getWeightPriorLengthScaleGradient(J, M, D, L, hyp, di)
     K = zeros(M^D, 1);
     for k = 1:M^D
         lambda = pi^2*((J(:, k)'./(2*L)).^2.*ell');
+        %TODO: in the libgp implementation it is possible to precompute a
+        %big bunch
         K(k) = spectralDensity(sum(lambda), D, sf, ell) * (1 - pi^2*((J(di, k)/(2*L(di)))^2)*ell(di));
     end
 end
