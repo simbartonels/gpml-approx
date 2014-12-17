@@ -28,7 +28,7 @@ elseif nargin==7                                                        % deriva
             K = getWeightPriorLengthScaleGradient(J, M, D, L, hyp, di);
         elseif di == D+1
             %the derivative is just the weight prior itself
-            K = getWeightPrior(J, M, D, L, hyp);
+            K = 2 * getWeightPrior(J, M, D, L, hyp);
         else
             error('Unknown hyper-parameter!');
         end
@@ -77,28 +77,28 @@ end
 
 
 function K = getWeightPrior(J, M, D, L, hyp)
-    sf = exp(hyp(D+1));
+    sf2 = exp(2 * hyp(D+1));
     ell = exp(2 * hyp(1:D));
     K = zeros(M^D, 1);
     for k = 1:M^D
         lambda = pi^2*((J(:, k)'./(2*L)).^2.*ell');
-        K(k) = spectralDensity(sum(lambda), D, sf, ell);
+        K(k) = spectralDensity(sum(lambda), D, sf2, ell);
     end
 end
 
 function K = getWeightPriorLengthScaleGradient(J, M, D, L, hyp, di)
-    sf = exp(hyp(D+1));
+    sf2 = exp(2 * hyp(D+1));
     ell = exp(2 * hyp(1:D));
     K = zeros(M^D, 1);
     for k = 1:M^D
         lambda = pi^2*((J(:, k)'./(2*L)).^2.*ell');
         %TODO: in the libgp implementation it is possible to precompute a
         %big bunch
-        K(k) = spectralDensity(sum(lambda), D, sf, ell) * (1 - pi^2*((J(di, k)/(2*L(di)))^2)*ell(di));
+        K(k) = spectralDensity(sum(lambda), D, sf2, ell) * (1 - pi^2*((J(di, k)/(2*L(di)))^2)*ell(di));
     end
 end
 
-function s = spectralDensity(rSqrd, D, sf, ell)
+function s = spectralDensity(rSqrd, D, sf2, ell)
     %see Rasmussen p.154 above (7.11)
-    s = sf*sqrt((2*pi)^D*prod(ell))*exp(-rSqrd/2);
+    s = sf2*sqrt((2*pi)^D*prod(ell))*exp(-rSqrd/2);
 end
