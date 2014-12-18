@@ -17,9 +17,7 @@ function testSolinLibGP()
     L = L'\(L\eye(size(L)))*exp(2*hyp.lik);
     post.L = L;
     %post.L = solve_chol(post.L, eye(size(post.L, 1)))*exp(2*hyp.lik);
-    L_o
-    post.L
-    %TODO: check computation of L. Too many NaN!
+    %TODO: test relative distances!
     diff = max(max(abs(L_o - post.L)));
     if diff > 1e-10
         diff
@@ -40,4 +38,5 @@ function testSolinLibGP()
         arg
         error('Check gradients of nlZ!');
     end
+    disp('Test completed succesfully.');
 end

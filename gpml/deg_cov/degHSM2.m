@@ -18,8 +18,7 @@ if nargin==5
    K = getWeightPrior(J, M, D, L, hyp);
    return;
 elseif nargin==6
-    ls = exp(hyp(1:D));
-    K = computePhi(z, D, M, ls, L);
+    K = computePhi(z, D, M, L);
 elseif nargin==7                                                        % derivatives
     %error('Optimization of hyperparameters not implemented.')
     if isempty(z)
@@ -39,7 +38,7 @@ elseif nargin==7                                                        % deriva
 end
 end
 
-function K = computePhi(z, D, M, ls, L)
+function K = computePhi(z, D, M, L)
     sz = size(z, 1);
     Phi = zeros(D, M, sz);
     m = 1:M;
