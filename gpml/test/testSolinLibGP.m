@@ -1,6 +1,6 @@
 function testSolinLibGP()
-    sd = 19023
-    [x, y, ~, hyp] = initEnv(sd);
+    %sd = 19023
+    [x, y, ~, hyp] = initEnv();
     [n, D] = size(x);
     actualM = n - 1;
     M = floor(actualM^(1/D));
@@ -12,22 +12,23 @@ function testSolinLibGP()
     L_o = post.L;
     %[ymuS, ys2S, ~, ~, ~, post] = gp(smhyp, @infSMfast, [], {@covSM, M}, @likGauss, x, y, xs);
     [nlZ, dnlZ, post] = gp(hyp, @infSolinfast, [], {@degHSM2, actualM}, @likGauss, x, y);
+    post.alpha = post.alpha(1:M^D);
     post.L = post.L(1:M^D, 1:M^D);
     L = post.L;
     L = L'\(L\eye(size(L)))*exp(2*hyp.lik);
     post.L = L;
     %post.L = solve_chol(post.L, eye(size(post.L, 1)))*exp(2*hyp.lik);
-    %TODO: test relative distances!
-    diff = max(max(abs(L_o - post.L)));
+    diff = max(max(abs((L_o - post.L))./L_o));
     if diff > 1e-10
         diff
         error('Check computation of L matrix!');
     end
-    diff = max(abs(alpha_o - post.alpha));
+    diff = max(abs((alpha_o - post.alpha)./alpha_o));
     if diff > 1e-10
+        diff
         error('Check computation of alpha!');
     end
-    diff = abs(nlZ_o - nlZ);
+    diff = abs((nlZ_o - nlZ)./nlZ_o);
     if diff > 1e-10
         diff
         error('Check computation of nlZ!');
