@@ -9,6 +9,7 @@ function K = degHSMiso(M, L, J, lambda, hyp, z, di)
 %   LaPlace operator
 % Hyperparameters are the same as for covSEiso and in the same order.
 
+%TODO: change to quadratic length scale!!!
 if nargin<5, K = '(2)'; return; end              % report number of parameters
 D = size(L, 2);
 if nargin==5
