@@ -1,4 +1,4 @@
-function [post, nlZ, dnlZ, g, pi, b] = infFastFoodfast(hyp, mean, cov, lik, x, y)
+function [post, nlZ, dnlZ, s, g, randpi, b] = infFastFoodfast(hyp, mean, cov, lik, x, y)
 
 likstr = lik; if ~ischar(lik), likstr = func2str(lik); end 
 if ~strcmp(likstr,'likGauss')               % NOTE: no explicit call to likGauss
@@ -20,8 +20,7 @@ elseif nargout == 2
 elseif nargout == 3
     [alpha, L, nlZ, dnlZ] = infFastFoodmex(M, unwrap(hyp), x, y);
 else
-    [alpha, L, nlZ, s, g, pi, b] = infFastFoodmex(m, unwrap(hyp), x, y);
-    dnlZ = s;
+    [alpha, L, nlZ, dnlZ, s, g, randpi, b] = infFastFoodmex(m, unwrap(hyp), x, y);
 end
 post.alpha = alpha;                      % return the posterior parameters
 post.L  = L; % Sigma-inv(Kuu)

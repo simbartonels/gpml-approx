@@ -7,6 +7,7 @@ function testSolinLibGP()
 
     L = 1.2 * ones([1, D]);
     [J, lambda] = initHSM(M, D, L);
+    %TODO: there should be a problem using the same hyper-parameters as I still don't use sigma^2 instead of sigma
     [nlZ_o, dnlZ_o, post] = gp(hyp, @infExactDegKernel, [],{@covDegenerate, {@degHSM2, M, L, J, lambda}}, @likGauss, x, y);
     alpha_o = post.alpha;
     L_o = post.L;
@@ -18,7 +19,7 @@ function testSolinLibGP()
     L = L'\(L\eye(size(L)))*exp(2*hyp.lik);
     post.L = L;
     %post.L = solve_chol(post.L, eye(size(post.L, 1)))*exp(2*hyp.lik);
-    diff = max(max(abs((L_o - post.L))./L_o));
+    diff = max(max(abs((L_o - post.L)./L_o)));
     if diff > 1e-10
         diff
         error('Check computation of L matrix!');
