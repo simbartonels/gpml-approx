@@ -1,0 +1,14 @@
+
+Gaussian Process Regression Approximations tests.
+
+The file RUN_EXPERIMENTS.m is the place to start.
+All the scripts in this directory should be easy to modify.
+Add your own datasets/approximations as described in 
+RUN_EXPERIMENTS.m and loadData.m
+
+ANALYZE_DATA produces plots of standardized mean squared error (SMSE)
+and mean standardized log loss (MSLL) as a function of time for all
+given datasets/method using our results stored in the
+Chalupka_Williams_Murray_Results directory.
+
+Krzysztof Chalupka, University of Edinburgh/Caltech, May 2012.

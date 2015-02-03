@@ -1,0 +1,7 @@
+These are the data used to produce plots in our JMLR paper. We provide it in hope that the user will be able to easily and quickly compare their approximation algorithms (or modifications of those) to three relatively simple and classical baselines of SoD, FITC and Local. See ../ANALYZE_RESULTS.m for plotting code. See ../RUN_EXPERIMENTS.m for the experiment running code.
+
+FITC saturates quickly on SYNTH2, and becomes numerically unstable. It's easy to detect this behavior and stop execution, so we trimmed the numerically unstable results in the plots. The untrimmed results are kept in results{FITC,Hybrid}_SYNTH2_untrimmed.mat.
+
+plot_data.m is a modified version of ../ANALYZE_RESULTS.m, which we used to produce the publication plots.
+
+Krzysztof Chalupka, Caltech, Sep 2012

@@ -1,0 +1,9 @@
+Synthetic datasets from Carl Rasmussen
+
+T08.mat, T04.mat and T02.mat (8, 4 and 2 dimensional Gaussian input density)
+each containing 2^16 cases. T08 is noise-free whereas T04 and T02 have a noise
+variance of 10^-6 (ie a noise standard deviation of 10^-3). The variables are
+called x and y.
+
+There is also a noise file (independent, unit variance Gaussian noise) T00.mat
+
