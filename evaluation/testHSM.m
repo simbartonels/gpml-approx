@@ -62,7 +62,9 @@ L = 1.2 * max(abs(trainX));
         meanfunc = []; 
         D = size(trainX, 2);
         [J, lambda] = initHSM(m, D, L);
-        covfunc = {@covDegenerate, {@degHSM, m, L, J, lambda}}; hyp = []; hyp.cov = zeros(D+1,1);
+        covfunc = {@covDegenerate, {@degHSM2, m, L, J, lambda}}; 
+        %covfunc = {@degHSM2, m, L, J, lambda};
+        hyp = []; hyp.cov = zeros(D+1,1);
         likfunc = @likGauss; sn = 0.25; hyp.lik = log(sn);
 
         %----------------------------------------
@@ -70,14 +72,14 @@ L = 1.2 * max(abs(trainX));
         % (including clustering!)
         %----------------------------------------
         hypTic=tic;
-        [hyp, ~, ~, theta_over_time] = minimize(hyp, @gp, EXPERIMENT.NUM_HYPER_OPT_ITERATIONS, {@infExactDegKernel}, meanfunc, covfunc, likfunc, trainX, trainY);
+        [hyp, ~, ~, theta_over_time] = minimize(hyp, @gp, EXPERIMENT.NUM_HYPER_OPT_ITERATIONS, {@infSolinfast}, meanfunc, covfunc, likfunc, trainX, trainY);
         hypTime = toc(hypTic);
 
         %----------------------------------------
         % Compute predictive mean and variance.
         %----------------------------------------
         predStart=tic;
-        [mF s2F] = gp(hyp, @infExactDegKernel, meanfunc, covfunc, likfunc, trainX, trainY, testX);
+        [mF s2F] = gp(hyp, @infSolinfast, meanfunc, covfunc, likfunc, trainX, trainY, testX);
         predTime=toc(predStart);
         
         %----------------------------------------
