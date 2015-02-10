@@ -5,9 +5,13 @@ function testDegCovsLibGP()
 end
 
 function testSolin()
+    seed = 0;
     [z, ~, ~, hyp] = initEnv();
-    [J, lambda] = initHSM(m, D, L);
+    [n, D] = size(z);
+    L = 1.2 * ones([1, D]);
+    M = floor((n-1)^(1/D));
+    [J, lambda] = initHSM(M, D, L);
     bf = {@degHSM2, M, L, J, lambda};
-    phi_o = feval(bf, hyp.cov, z)
+    phi_o = feval(bf{:}, hyp.cov, z)
     phi = covDegFast(bf, M, seed, hyp.cov, [], z)
 end
