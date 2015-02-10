@@ -7,12 +7,11 @@ function testSolinLibGP()
 
     L = 1.2 * ones([1, D]);
     [J, lambda] = initHSM(M, D, L);
-    %TODO: there should be a problem using the same hyper-parameters as I still don't use sigma^2 instead of sigma
-    [nlZ_o, dnlZ_o, post] = gp(hyp, @infExactDegKernel, [],{@covDegenerate, {@degHSM2, M, L, J, lambda}}, @likGauss, x, y);
+    [nlZ_o, dnlZ_o, post] = gp(hyp, @infExactDegKernel, [], {@covDegenerate, {@degHSM2, M, L, J, lambda}}, @likGauss, x, y);
     alpha_o = post.alpha;
     L_o = post.L;
     %[ymuS, ys2S, ~, ~, ~, post] = gp(smhyp, @infSMfast, [], {@covSM, M}, @likGauss, x, y, xs);
-    [nlZ, dnlZ, post] = gp(hyp, @infSolinfast, [], {@degHSM2, actualM}, @likGauss, x, y);
+    [nlZ, dnlZ, post] = gp(hyp, @infSolinfast, [], {@covDegFast, {@degHSM2, M, L, J, lambda}, 0, M}, @likGauss, x, y);
     post.alpha = post.alpha(1:M^D);
     post.L = post.L(1:M^D, 1:M^D);
     L = post.L;

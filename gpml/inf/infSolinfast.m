@@ -1,17 +1,16 @@
 %TODO: copy&paste code!!!
 function [post, nlZ, dnlZ] = infSolinfast(hyp, mean, cov, lik, x, y)
-% INFFITCMEX Inference method for Sparse multiscale GPR. Equivalent to FITC
-% using covSM.
 
 likstr = lik; if ~ischar(lik), likstr = func2str(lik); end 
 if ~strcmp(likstr,'likGauss')               % NOTE: no explicit call to likGauss
-  error('FITC inference only possible with Gaussian likelihood');
+  error('Inference method supports only Gaussian likelihood');
 end
 cov1 = cov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
-if strcmp(cov1,'covDegenerate');
+if strcmp(cov1,'covDegFast');
     cov = cov{2};
+else
+    error('You MUST use covDegFast to use this inference method.');
 end
-
 cov1 = cov{1}; if isa(cov1, 'function_handle'), cov1 = func2str(cov1); end
 if ~strcmp(cov1,'degHSM2'); error('Only degHSM2 supported.'), end    % check cov
 if ~(isempty(mean) || strcmp(func2str(mean{1}), 'meanZero'))

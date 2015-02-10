@@ -62,7 +62,7 @@ L = 1.2 * max(abs(trainX));
         meanfunc = []; 
         D = size(trainX, 2);
         [J, lambda] = initHSM(m, D, L);
-        covfunc = {@covDegenerate, {@degHSM2, m, L, J, lambda}}; 
+        covfunc = {@covDegFast, {@degHSM2, m, L, J, lambda}, 0, M}; 
         %covfunc = {@degHSM2, m, L, J, lambda};
         hyp = []; hyp.cov = zeros(D+1,1);
         likfunc = @likGauss; sn = 0.25; hyp.lik = log(sn);
