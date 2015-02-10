@@ -19,7 +19,7 @@ if nargin <= 6
       % gp.m will make this call
       K = zeros(n, 1);
     else
-        bf1 = bf{1}; if isa(bf1, 'function_handle'), bf1 = func2str(fb1); end
+        bf1 = bf{1}; if isa(bf1, 'function_handle'), bf1 = func2str(bf1); end
         %ignore x
         K = bfmex(convertDegCovNameToLibGPMethodName(bf1), seed, M, unwrap(hyp), z);
     end
