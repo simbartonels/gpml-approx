@@ -4,7 +4,7 @@ function K = degHSM2(M, L, J, lambda, hyp, z, di)
 % 2014 augmented with automatic relevance determination (ARD).
 % In contrast to degHSM ARD is applied in a less naive way and more
 % efficient.
-% M - the number of basis functions
+% M - D^M number of basis functions
 % L - a vector describing the range of the inputs, i.e. x in [-L, L]
 % J - an index matrix created in initHSM.
 % lambda - the eigenvalues of the kernel corresponding to the negative 
@@ -80,8 +80,8 @@ function K = getWeightPrior(J, M, D, L, hyp)
     ell = exp(2 * hyp(1:D));
     K = zeros(M^D, 1);
     for k = 1:M^D
-        lambda = pi^2*((J(:, k)'./(2*L)).^2.*ell');
-        K(k) = spectralDensity(sum(lambda), D, sf2, ell);
+        lambda = sum(pi^2*((J(:, k)'./(2*L)).^2.*ell'));
+        K(k) = spectralDensity(lambda, D, sf2, ell);
     end
 end
 

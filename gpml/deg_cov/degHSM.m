@@ -2,12 +2,15 @@ function K = degHSM(M, L, J, lambda, hyp, z, di)
 % DEGHSM Degenerate covariance function proposed in "Hilbert Space Methods
 % for Reduced Rank Gaussian Process Regression" by Solin and Särkkä in
 % 2014 augmented with automatic relevance determination.
-% M - the number of basis functions
+% M - D^M number of basis functions
 % L - a vector describing the range of the inputs, i.e. x in [-L, L]
 % J - an index matrix created in initHSM.
 % lambda - the eigenvalues of the kernel corresponding to the negative 
 %   LaPlace operator
 % Hyperparameters are the same as for covSEard and in the same order.
+% In this implementation the length scales are applied on the inputs. Thus
+% the gradients of the basis functions become non-trivial. Also the
+% hyper-parameters are not quadratic.
 
 %TODO: change to quadratic length scale!!!
 if nargin<5, K = '(D+1)'; return; end              % report number of parameters
@@ -110,7 +113,9 @@ function K = getWeightPrior(lambda, M, D, hyp)
     sf = exp(hyp(D+1));
     K = zeros(M^D, 1);
     for k = 1:M^D
-         K(k) = spectralDensity(lambda(k), D, sf);
+        % What happens here is the same as in degHSM2.
+        % lambda will be multiplied by LS()^2 in the spectral density.
+        K(k) = spectralDensity(lambda(k), D, sf);
     end
 end
 
