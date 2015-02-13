@@ -124,6 +124,6 @@ phix = degHSM(M, L, J, lambda, hyp.cov, x);
 phixs = degHSM(M, L, J, lambda, hyp.cov, xs);
 weight_prior = degHSM(M, L, J, lambda, hyp.cov);
 
-diff = phix'*diag(weight_prior)*phixs - covSEard(hyp.cov, x, xs)
+diff = abs(phix'*diag(weight_prior)*phixs - covSEard(hyp.cov, x, xs))
 if abs(diff) > 1e-15, error('Toy example appears broken.'); end
 end

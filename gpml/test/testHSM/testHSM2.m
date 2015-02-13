@@ -1,8 +1,82 @@
 function testHSM2()
-    testBasisFunctionImpl();
-    testSEard();
-    testGradients();
+    %testBasisFunctionImpl();
+    %testSEard();
+    %testGradients();
+    testEquivalentToHSMsimple();
+    testEquivalentToHSM();
     disp('Test completed successfully.');
+end
+
+function testEquivalentToHSM()
+    [x, ~, z, hyp2] = initEnv();
+    M = 2;
+    D = size(x, 2);
+    hyp2.cov(1:D) = 1./(1+randn(D, 1).^2)-2;
+
+    hyp.lik = hyp2.lik;
+    %in degHSM we use exp(hyp) instead of exp(2*hyp)
+    hyp.cov = 2 * hyp2.cov;
+    %hyp.cov(D+1) = 2 * hyp.cov(D+1);
+
+    L = 1.2 * max(abs(x));%rand(1, D);
+    [J, lambda] = initHSM(M, D, L);
+
+    cov_deg2 = {@covDegenerate, {@degHSM2, M, L, J, lambda}};
+    cov_deg = {@covDegenerate, {@degHSM, M, L, J, lambda}};
+    
+    sigma2 = feval(cov_deg2{:}, hyp2.cov);
+    sigma = feval(cov_deg{:}, hyp.cov);
+%     diff = max(abs((sigma2-sigma)./sigma));
+%     % As the implementations differ the weight priors can not agree.
+%     if diff > 1e-5
+%        error('Weight priors disargree! But that is due to the implementation.'); 
+%     end
+    % by convention the first input is ignored (see covDegenerate)
+    bf2x = feval(cov_deg2{:}, hyp2.cov, [], x);
+    bfx = feval(cov_deg{:}, hyp.cov, [], x);
+
+    bf2z = feval(cov_deg2{:}, hyp2.cov, [], z);
+    bfz = feval(cov_deg{:}, hyp.cov, [], z);
+    k2 = bf2x' * diag(sigma2) * bf2z;
+    k = bfx' * diag(sigma) * bfz;
+    diff = max(max(abs((k-k2)./k)));
+    if diff > 1e-5
+       error('DegHSM2 and DegHSM disagree!'); 
+    end
+end
+
+function testEquivalentToHSMsimple()
+    [x, ~, z, hyp2] = initEnv();
+    M = 2;
+    D = size(x, 2);
+    hyp2.cov(1:D) = log(0.1 * ones([1, D]));
+
+    hyp.lik = hyp2.lik;
+    %in degHSM we use exp(hyp) instead of exp(2*hyp)
+    hyp.cov = hyp2.cov;
+    hyp.cov(D+1)=2*hyp.cov(D+1);
+
+    L = 1.2 * max(abs(x));%rand(1, D);
+    [J, lambda] = initHSM(M, D, L);
+
+    cov_deg2 = {@covDegenerate, {@degHSM2, M, L, J, lambda}};
+    cov_deg = {@covDegenerate, {@degHSM, M, L, J, lambda}};
+    
+    sigma2 = feval(cov_deg2{:}, hyp2.cov);
+    sigma = feval(cov_deg{:}, hyp.cov);
+    diff = max(abs((sigma2-sigma)./sigma));
+    % In this special case the weight priors MUST be the same.
+    if diff > 1e-5
+       error('Weight priors disargree! But that is due to the implementation.'); 
+    end
+    % by convention the first input is ignored (see covDegenerate)
+    bf2x = feval(cov_deg2{:}, hyp2.cov, [], x);
+    bfx = feval(cov_deg{:}, hyp.cov, [], x);
+    diff = max(max(abs((bf2x-bfx)./bfx)));
+    % In this special case also phi(x) should produce the same results.
+    if diff > 1e-5
+       error('Basis function computation disagrees!'); 
+    end
 end
 
 function testBasisFunctionImpl()
@@ -15,17 +89,17 @@ function testBasisFunctionImpl()
     n = 1;
     x = rand(n, D) / 2;
     logsf2 = 0;
-    logls = 1./(1+randn(D, 1).^2)-3
+    logls = 1./(1+randn(D, 1).^2)-2
     cov2hyp = [logls; logsf2];
     L = ones(1, D);
     [J, lambda] = initHSM(M, D, L);
     cov2 = {@degHSM2, M, L, J, lambda};
     phix = feval(cov2{:}, cov2hyp, x);
     weight_prior = feval(cov2{:}, cov2hyp);    
-    sf = exp(2*logsf2);
+    sf2 = exp(2*logsf2);
     for m = 1:M^D
         bf = 1;
-        s = sf;
+        s = sf2;
         for d = 1:D
             loglsd = logls(d);
             sqrtlambda = pi*J(d, m)/L(d)/2;
@@ -35,13 +109,16 @@ function testBasisFunctionImpl()
             bf = bf * sin(pi * J(d, m) * (x(d)+L(d))/2/L(d))/sqrt(L(D));
         end
         
-        if abs(phix(m) - bf) > 1e-15
+        diff = abs((phix(m) - bf)/bf);
+        if diff > 1e-5
             m
             phix
             bf
             error('Somethings wrong in the computation of the basis functions.');
         end
-        if abs(weight_prior(m) - s) > 1e-15
+        
+        diff = abs((weight_prior(m) - s)/s);
+        if diff > 1e-5
             weight_prior
             s
             m
