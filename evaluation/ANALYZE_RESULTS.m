@@ -25,9 +25,11 @@
 % kjchalup@caltech.edu
 
 RESULTS_DIR = './Chalupka_Williams_Murray_Results/'; %
-RESULTS_DIR = './results/';
-PLOTS_DIR = './plots/'; % Ready plots go here.
-DATASETS = {'PRECIPITATION'}; % Plot data for these datasets only.
+me = mfilename;                                            % what is my filename
+mydir = which(me); mydir = mydir(1:end-2-numel(me));        % where am I located
+RESULTS_DIR = [mydir, 'results\'];
+PLOTS_DIR = [mydir, 'plots\']; % Ready plots go here.
+DATASETS = {'SYNTH2'}; % Plot data for these datasets only.
 METHODS = {'HSM'}; % Plot data for these methods only.
 
 plot_colors = {'r', 'g', 'b', 'k'}; % At least as many colors as methods 
