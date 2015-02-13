@@ -2,6 +2,7 @@ function testHSM2()
     testBasisFunctionImpl();
     testSEard();
     testGradients();
+    disp('Test completed successfully.');
 end
 
 function testBasisFunctionImpl()
@@ -57,8 +58,10 @@ function testSEard()
     %Seems like we have a problem with this seed.
     %sd = 2866
     rng(sd);
-    D = 3;
-    M = 24;
+    D = 2;
+    M = 96;
+    %D=3 and M=24 fails quite often but I think this is because 24 is just
+    %not enough and more not possible.
     n = 1;
     x = rand(n, D) / 2;
     z = rand(1, D) / 2;

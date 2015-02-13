@@ -3,7 +3,8 @@ function testHSM()
     testToyExample();
     testGradients2();
     testGradients();
-    testAgainstNaiveImplementation();
+    %testAgainstNaiveImplementation();
+    disp('Test completed successfully.');
 end
 
 function testSEard()
