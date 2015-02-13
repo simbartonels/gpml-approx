@@ -1,18 +1,23 @@
 % 
-datasets = {'PRECIPITATION'};%, 'CHEM', 'SARCOS'};
-%datasets = {'SYNTH2'};
+%datasets = {'PRECIPITATION'};%, 'CHEM', 'SARCOS'};
+datasets = {'SYNTH2'};
 
 % Choose the approximation to use: SoD, Local, FITC.
 % To use a custom method, create a test[method_name].m script 
 % analogous to out testSoD.m etc.
-EXPERIMENT.METHOD = 'HSM';
-EXPERIMENT.M = 2;
+EXPERIMENT.METHOD = 'SoD_mine';
+EXPERIMENT.EXTRA = '';
+EXPERIMENT.M = 150;
+EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = -75;
+EXPERIMENT.NUM_TRIALS = 1; % Number of experiment repetitions.
 
 addpath(genpath('../gpml'));
+addpath(genpath('./methods'));
+addpath('../project/sod')
+addpath(genpath('../project'))
+
 maxNumCompThreads(1);
 startup
-
-EXPERIMENT.NUM_TRIALS = 2; % Number of experiment repetitions.
 
 for d=1:length(datasets)
 EXPERIMENT.DATASET = datasets{d};
@@ -21,7 +26,6 @@ EXPERIMENT.DATASET_FOLDS = 1; %total number of folds will be determined in load_
 % For SoD, FITC and Local EXPERIMENT.M is a list of the 
 % subset sizes, inducing point set sizes and cluster sizes resp.
 %EXPERIMENT.M = [32 64 128 256 512 1024 2048]; 
-EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = -28;
 
 % Save raw experiment results here.
 EXPERIMENT.RESULTS_DIR = './results/'; 
@@ -32,17 +36,19 @@ EXPERIMENT.RESULTS_DIR = './results/';
 fprintf('Running %d %s experiments on fold %d of %d for %s dataset.\nThis might take a while...\n', EXPERIMENT.NUM_TRIALS, EXPERIMENT.METHOD, EXPERIMENT.DATASET_FOLD, ... 
     EXPERIMENT.DATASET_FOLDS, EXPERIMENT.DATASET);
 loadData;
-eval(['test' EXPERIMENT.METHOD]);
+%eval(['test' EXPERIMENT.METHOD]);
+EVAL_METHOD;
 %TODO: remove
 disp('REMOVE THE LINE BELOW!!!');
 EXPERIMENT.DATASET_FOLDS = 1;
 %if the data set is evaluated using cross validation we do that here
 for f=2:EXPERIMENT.DATASET_FOLDS
-EXPERIMENT.DATASET_FOLD = f;
-fprintf('Running %d %s experiments on fold %d of %d for %s dataset.\nThis might take a while...\n', EXPERIMENT.NUM_TRIALS, EXPERIMENT.METHOD, EXPERIMENT.DATASET_FOLD, ... 
-    EXPERIMENT.DATASET_FOLDS, EXPERIMENT.DATASET);
-loadData;
-eval(['test' EXPERIMENT.METHOD]);
+    EXPERIMENT.DATASET_FOLD = f;
+    fprintf('Running %d %s experiments on fold %d of %d for %s dataset.\nThis might take a while...\n', EXPERIMENT.NUM_TRIALS, EXPERIMENT.METHOD, EXPERIMENT.DATASET_FOLD, ... 
+        EXPERIMENT.DATASET_FOLDS, EXPERIMENT.DATASET);
+    loadData;
+    %eval(['test' EXPERIMENT.METHOD]);
+    EVAL_METHOD;
 end
 %----------------------------------------
 % Load the results.
