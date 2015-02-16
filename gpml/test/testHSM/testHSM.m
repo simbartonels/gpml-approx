@@ -1,6 +1,7 @@
 function testHSM()
-    testSEard();
+    %testSEardSingleInput();
     testToyExample();
+    testSEard();
     testGradients2();
     testGradients();
     %testAgainstNaiveImplementation();
@@ -8,6 +9,39 @@ function testHSM()
 end
 
 function testSEard()
+% Tests the degHSM against the SEard.
+    %sd = floor(rand(1) * 32000)
+%    sd = 12620
+    %sd = 10184
+    %Seems like we have a problem with this seed.
+    %sd = 2866
+    %rng(sd);
+    [x, ~, z] = initEnv();
+    D = size(x, 2);
+    M = 96;
+    %D=3 and M=24 fails quite often but I think this is because 24 is just
+    %not enough and more not possible.
+    logsf2 = randn(1);
+    logls = 1./(1+randn(D, 1).^2)-2;
+    hypcov = [logls; logsf2];
+    b = ones(1, D);
+    L = b;
+    [J, lambda] = initHSM(M, D, L);
+    cov = {@degHSM, M, L, J, lambda};
+    phix = feval(cov{:}, hypcov, x);
+    phiz = feval(cov{:}, hypcov, z);
+    weight_prior = feval(cov{:}, hypcov);
+    result_impl2 = phix'*diag(weight_prior)*phiz;
+    k = covSEard(hypcov, x, z);
+
+    diff = median(median(abs((result_impl2 - k).^2./k)));
+    if abs(diff) > (1e-9)^(1/D)
+        result_impl2 - k
+        error('Implementation appears broken!'); 
+    end
+end
+
+function testSEardSingleInput()
     sd = floor(rand(1) * 32000)
 %    sd = 12620
     %sd = 10184
@@ -18,9 +52,7 @@ function testSEard()
     x = rand(n, D) / 2;
     z = rand(1, D) / 2;
     logsf2 = 0;
-    logls = log(ones(D, 1)/10);
-    logls = 1./(1+randn(D, 1).^2)-3
-    %logls = ones(D, 1)/(1+randn(1)^2)-2
+    logls = 1./(1+randn(D, 1).^2)-2;
     hsmhyp.lik = 0;
     hsmhyp.cov = [];
     hyp.lik = 0;
@@ -31,7 +63,6 @@ function testSEard()
     j = 1:M;
     j = j';
     for d = 1:D
-        loglsd = log(0.1);
         loglsd = logls(d);
         sqrtlambda = pi*j/(b(d)-a(d));
         spec_dens = @(r) exp(2*logsf2)*sqrt(2*pi)*exp(loglsd)*exp(-exp(2*loglsd)*r.^2/2);
@@ -41,11 +72,7 @@ function testSEard()
         cov(d) = {{@covHSMnaive, s, a(1, d), b(1, d), d}};
     end
     
-    %varargout1 = gp(hyp1, @infExact, [], {@covProd, cov}, @likGauss, x, y, xs)
     cov = {@covProd, cov};
-    ls = exp(logls');
-%     result = feval(cov{:}, hsmhyp.cov, 0.1*x./repmat(ls, [size(x, 1), 1]), ...
-%         0.1*z./repmat(ls, [size(z, 1), 1]));
     result = feval(cov{:}, hsmhyp.cov, x, z);
     L = b;
     [J, lambda] = initHSM(M, D, L);
@@ -55,8 +82,6 @@ function testSEard()
     phiz = feval(cov2{:}, cov2hyp, z);
     weight_prior = feval(cov2{:}, cov2hyp);
     result_impl = phix'*diag(weight_prior)*phiz;
-%     diff = result - result_impl
-%     if abs(diff) > 1e-5, error('Naive and actual implementation disagree!'); end
     diff = result - covSEard(hyp.cov, x, z);
     if abs(diff) > (1e-9)^(1/D), error('Product kernel view appears broken!'); end
     diff = result_impl - covSEard(hyp.cov, x, z);
