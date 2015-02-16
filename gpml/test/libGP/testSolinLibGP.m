@@ -11,7 +11,7 @@ function testSolinLibGP()
     alpha_o = post.alpha;
     L_o = post.L;
     %[ymuS, ys2S, ~, ~, ~, post] = gp(smhyp, @infSMfast, [], {@covSM, M}, @likGauss, x, y, xs);
-    [nlZ, dnlZ, post] = gp(hyp, @infSolinfast, [], {@covDegFast, {@degHSM2, M, L, J, lambda}, 0, M}, @likGauss, x, y);
+    [nlZ, dnlZ, post] = gp(hyp, @infSolinfast, [], {@covDegFast, {@degHSM2, M, L, J, lambda}, 0, M^D}, @likGauss, x, y);
     post.alpha = post.alpha(1:M^D);
     post.L = post.L(1:M^D, 1:M^D);
     L = post.L;

@@ -80,7 +80,8 @@ function K = getWeightPrior(J, M, D, L, hyp)
     ell = exp(2 * hyp(1:D));
     K = zeros(M^D, 1);
     for k = 1:M^D
-        lambda = sum(pi^2*((J(:, k)'./(2*L)).^2.*ell'));
+	lambda = pi^2*((J(:, k)'./(2*L)).^2);
+        lambda = sum(lambda.*ell');
         K(k) = spectralDensity(lambda, D, sf2, ell);
     end
 end
