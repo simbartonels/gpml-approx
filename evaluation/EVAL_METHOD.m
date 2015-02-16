@@ -2,7 +2,7 @@ global testTime;
 varTest=var(testY);
 meanTest=mean(testY);
 
-len = abs(EXPERIMENT.NUM_HYPER_OPT_ITERATIONS)+1;
+len = abs(EXPERIMENT.NUM_HYPER_OPT_ITERATIONS);
 resultOut.('msll') = zeros(EXPERIMENT.NUM_TRIALS, len);
 resultOut.('mse') = zeros(EXPERIMENT.NUM_TRIALS, len);;
 resultOut.('hyp_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
@@ -53,6 +53,7 @@ resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
         resultOut.('test_time')(trial_id, :) = testTime;
         for i=1:size(theta_over_time, 2)
             if theta_over_time(1, i) < 0, break, end
+            disp(sprintf('Calculating MSE for iteration %d', i)); 
             resultOut.('hyps'){trial_id} = [resultOut.('hyps'){trial_id} theta_over_time(2:num_hyps, i)];
             %[mF, s2F] = gp_sod_mine(rewrap(hyp, theta_over_time(2:num_hyps, i)), EXPERIMENT.NUM_HYPER_OPT_ITERATIONS, {@covSEard}, likfunc, trainX, trainY, retvals{1}, 'g', testX);
             [mF, s2F] = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, testX, retvals);
