@@ -10,10 +10,16 @@ resultOut.('train_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
 resultOut.('test_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
 resultOut.N_train = length(trainY);
 resultOut.N_test = length(testY);
+resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
 
     m = EXPERIMENT.M;
 
     for trial_id = 1:EXPERIMENT.NUM_TRIALS
+	seed = floor(rand(1) * 32000);
+	EXPERIMENT.SEED = seed;
+	rng('default');
+	rng(seed);
+
         resultOut.('hyps'){trial_id}=[];
         resultOut.('sod'){trial_id} = zeros(m, 1);
 
