@@ -29,7 +29,7 @@ elseif nargin==7                                                        % deriva
             %the derivative is just the weight prior itself
             K = 2 * getWeightPrior(J, M, D, L, hyp);
         else
-            error('Unknown hyper-parameter!');
+            error(sprintf('Unknown hyper-parameter: %d. Dimensionality is %d', di, D));
         end
     else
         sz = size(z, 1);
