@@ -72,7 +72,7 @@ if length>0, S='Linesearch'; else S='Function evaluation'; end
 
 i = 0;                                            % zero the run length counter
 ls_failed = 0;                             % no previous line search has failed
-X_over_time = -ones([1 + size(unwrap(X), 1), abs(length)+1]); %too long but that's okay
+X_over_time = -ones([1 + size(unwrap(X), 1), abs(length)]); %too long but that's okay
 num_iters = 1;
 tic; %start measuring time for initial setup
 [f0 df0] = feval(f, X, varargin{:});          % get function value and gradient
