@@ -1,10 +1,15 @@
 global testTime;
 varTest=var(testY);
 meanTest=mean(testY);
+varTrain=var(trainY);
+meanTrain=mean(trainY);
 
 len = abs(EXPERIMENT.NUM_HYPER_OPT_ITERATIONS);
 resultOut.('msll') = zeros(EXPERIMENT.NUM_TRIALS, len);
 resultOut.('mse') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+resultOut.('llh') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+resultOut.('tmse') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+
 resultOut.('hyp_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
 resultOut.('train_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
 resultOut.('test_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
@@ -31,7 +36,7 @@ resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
         hypTic=tic;
         [hyp, theta_over_time, retvals] = feval([EXPERIMENT.METHOD '_hyper_opt'], EXPERIMENT, trainX, trainY, m, D);
         hypTime = toc(hypTic);
-        
+
         %----------------------------------------
         % Compute predictive mean and variance.
         %----------------------------------------
@@ -59,6 +64,13 @@ resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
             [mF, s2F] = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, testX, retvals);
             resultOut.('msll')(trial_id, i) = mnlp(mF,testY,s2F, meanTest, varTest);
             resultOut.('mse')(trial_id, i)  = mse(mF,testY, meanTest, varTest);
+
+	    %TODO: NOT PRETTY!!!
+            %llh = gp(rewrap(hyp, theta_over_time(2:num_hyps, i)), retvals{1}, [], retvals{2}, retvals{3}, trainX, trainY);
+            %resultOut.('llh')(trial_id, i) = llh;
+            mF = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, trainX, retvals);
+            resultOut.('tmse')(trial_id, i)  = mse(mF,trainY, meanTrain, varTrain);
+
         end
         resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
         eval(sprintf('%s=resultOut;', resultVarName));
