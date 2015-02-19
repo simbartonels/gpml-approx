@@ -60,14 +60,10 @@ resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
             if theta_over_time(1, i) < 0, break, end
             disp(sprintf('Calculating MSE for iteration %d', i)); 
             resultOut.('hyps'){trial_id} = [resultOut.('hyps'){trial_id} theta_over_time(2:num_hyps, i)];
-            %[mF, s2F] = gp_sod_mine(rewrap(hyp, theta_over_time(2:num_hyps, i)), EXPERIMENT.NUM_HYPER_OPT_ITERATIONS, {@covSEard}, likfunc, trainX, trainY, retvals{1}, 'g', testX);
-            [mF, s2F] = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, testX, retvals);
+            [mF, s2F, nlZ] = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, testX, retvals);
             resultOut.('msll')(trial_id, i) = mnlp(mF,testY,s2F, meanTest, varTest);
             resultOut.('mse')(trial_id, i)  = mse(mF,testY, meanTest, varTest);
-
-	    %TODO: NOT PRETTY!!!
-            %llh = gp(rewrap(hyp, theta_over_time(2:num_hyps, i)), retvals{1}, [], retvals{2}, retvals{3}, trainX, trainY);
-            %resultOut.('llh')(trial_id, i) = llh;
+            resultOut.('llh')(trial_id, i) = nlZ;
             mF = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, trainX, retvals);
             resultOut.('tmse')(trial_id, i)  = mse(mF,trainY, meanTrain, varTrain);
 
