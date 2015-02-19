@@ -29,13 +29,15 @@ me = mfilename;                                            % what is my filename
 mydir = which(me); mydir = mydir(1:end-2-numel(me));        % where am I located
 RESULTS_DIR = [mydir, 'results/'];
 PLOTS_DIR = [mydir, 'plots/']; % Ready plots go here.
-DATASETS = {'SYNTH2'}; % Plot data for these datasets only.
-METHODS = {'HSM'}; % Plot data for these methods only.
+DATASETS = {'PRECIPITATION'} % Plot data for these datasets only.
+METHODS = {'HSM'} % Plot data for these methods only.
 
 plot_colors = {'r', 'g', 'b', 'k'}; % At least as many colors as methods 
                                     % plotted. 
 PLOTFILETYPE='pdf';
 FILENAME_SUFFIX = '_unedited';
+
+fold = '4'
 
 figure, close
 for dset_id = 1:length(DATASETS)
@@ -47,7 +49,7 @@ for dset_id = 1:length(DATASETS)
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         % Load data.
-        load(sprintf('%sresults%s_%s_fold1', RESULTS_DIR, method, dataset));
+        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         hold on;
         plot(results.hyp_time, results.msll, '-', 'Color', plot_colors{method_id});
@@ -70,7 +72,7 @@ for dset_id = 1:length(DATASETS)
         plot(results.hyp_time, results.llh, '-', 'Color', plot_colors{method_id});
         plots{method_id} = plot(mean(results.hyp_time), mean(results.llh), '.', 'Color', plot_colors{method_id});
         xlabel('Hyperparameter training time [s]');
-        ylabel('LLH');
+        ylabel('-LLH');
         %set(gca, 'xscale', 'log');
     end
     legend(cell2mat(plots), METHODS);
@@ -83,7 +85,7 @@ for dset_id = 1:length(DATASETS)
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         % Load data.
-        load(sprintf('%sresults%s_%s_fold1', RESULTS_DIR, method, dataset));
+        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.test_time/results.N_test, results.msll, '-', 'Color', plot_colors{method_id});
         hold on;
@@ -102,7 +104,7 @@ for dset_id = 1:length(DATASETS)
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         % Load data.
-        load(sprintf('%sresults%s_%s_fold1', RESULTS_DIR, method, dataset));
+        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.hyp_time, results.mse, '-', 'Color', plot_colors{method_id});
         hold on;
@@ -122,7 +124,7 @@ for dset_id = 1:length(DATASETS)
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         % Load data.
-        load(sprintf('%sresults%s_%s_fold1', RESULTS_DIR, method, dataset));
+        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.hyp_time, results.tmse, '.', 'Color', plot_colors{method_id});
         hold on;
@@ -142,7 +144,7 @@ for dset_id = 1:length(DATASETS)
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         % Load data.
-        load(sprintf('%sresults%s_%s_fold1', RESULTS_DIR, method, dataset));
+        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.test_time/results.N_test, results.mse, '.', 'Color', plot_colors{method_id});
         hold on;
