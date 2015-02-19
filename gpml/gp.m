@@ -91,15 +91,11 @@ end
       warning('You attempt classification using labels different from {+1,-1}\n')
     end
   end
-  if nargin>7   % compute marginal likelihood and its derivatives only if needed
-    post = inf(hyp, mean, cov, lik, x, y);
-  else
     if nargout==1
       [post nlZ] = inf(hyp, mean, cov, lik, x, y); dnlZ = {};
     else
       [post nlZ dnlZ] = inf(hyp, mean, cov, lik, x, y);
     end
-  end
 % catch
 %   msgstr = lasterr;
 %   MEMERRSTR='Out of memory. Type HELP MEMORY for your options.'; %KRZ
@@ -154,7 +150,7 @@ else
   end
   testTime = toc(testTic); %KRZ
   if nargin<9
-    varargout = {ymu, ys2, fmu, fs2, [], post};        % assign output arguments
+    varargout = {ymu, ys2, fmu, fs2, nlZ, post};        % assign output arguments
   else
     varargout = {ymu, ys2, fmu, fs2, lp, post};
   end
