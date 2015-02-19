@@ -33,6 +33,6 @@ function name = convertDegCovNameToLibGPMethodName(name)
     if strcmp(name, 'degHSM2')
         name = 'Solin';
     elseif strcmp(name, 'degFastFood')
-        name = 'Fastfood';
+        name = 'FastFood';
     end
 end
