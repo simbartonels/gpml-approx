@@ -1,11 +1,11 @@
-function [out1, out2, theta_over_time] = gp_sod_mine(logtheta, opt_iters, covfunc, likfunc, x, varargin)
+function [out1, out2, out3] = gp_sod_mine(logtheta, opt_iters, covfunc, likfunc, x, varargin)
 
 % gpr_sod - Gaussian Process regression, using the Subset of Data 
 % approximation. 
 % 
-% usage: [loghyper sod] = gpr_sod(logtheta, covfunc, likfunc, x, y, N, method,splitLen, 'split')
-%    or: [mu S2] = gpr_sod(logtheta, covfunc, likfunc, x, y, N, method, xstar)
-%    or: [mu S2] = gpr_sod(logtheta, covfunc, likfunc, x, y, sod, method, xstar)
+% usage: [loghyper sod theta_over_time] = gpr_sod(logtheta, covfunc, likfunc, x, y, N, method,splitLen, 'split')
+%    or: [mu S2 nlZ] = gpr_sod(logtheta, covfunc, likfunc, x, y, N, method, xstar)
+%    or: [mu S2 nlZ] = gpr_sod(logtheta, covfunc, likfunc, x, y, sod, method, xstar)
 %
 % where:
 %
@@ -38,7 +38,7 @@ if nargin == 8
     sod = indPoints(x, N, method, covfunc, logtheta);
 
     % Optimize the hyperparameters.
-    [out1, ~, ~, theta_over_time] = minimize(logtheta, @gp, opt_iters, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:));
+    [out1, ~, ~, out3] = minimize(logtheta, @gp, opt_iters, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:));
     out2 = sod;
 
 elseif nargin == 9
@@ -51,7 +51,7 @@ elseif nargin == 9
     sod = varargin{2};
     xstar = varargin{4};
 
-    [out1, out2] = gp(logtheta, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:), xstar);
+    [out1, out2, ~, ~, out3] = gp(logtheta, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:), xstar);
 
   else
 
@@ -63,7 +63,7 @@ elseif nargin == 9
     % Choose a sod.
     sod = indPoints(x, N, method, covfunc, logtheta);
     % Do the regression.
-    [out1, out2] = gp(logtheta, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:), xstar);
+    [out1, out2, ~, ~, out3] = gp(logtheta, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:), xstar);
   end
 elseif nargin==10
 
@@ -74,7 +74,7 @@ elseif nargin==10
     sod = indPoints(x, N, method, covfunc, logtheta, splitLen);
 
     % Optimize the hyperparameters.
-    [out1, ~, ~, theta_over_time] = minimize(logtheta, @gp, opt_iters, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:));
+    [out1, ~, ~, out3] = minimize(logtheta, @gp, opt_iters, @infExact, [], covfunc, likfunc, x(sod,:), y(sod,:));
     out2 = sod;
 end
 
