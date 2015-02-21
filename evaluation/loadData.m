@@ -92,7 +92,15 @@ elseif strcmp(EXPERIMENT.DATASET,'SARCOS')
     D=21;
     trainX = train(1:n,1:D); trainY = train(1:n,D+1);
     testX  = test(:,1:D); testY = test(:,D+1);
-
+    
+elseif strcmp(EXPERIMENT.DATASET, 'DEBUG')
+    n = 100;
+    D = 2;
+    n_test = 10;
+    trainX = randn([n, D]);
+    trainY = randn([n, 1]);
+    testX = randn([n_test, D]);
+    testY = randn([n_test, 1]);
 elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
     EXPERIMENT.DATA_SET_FOLDS = 10;
     prec = load('PRECIPITATION\\USprec1.txt');
@@ -102,6 +110,8 @@ elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
     %avgy = mean(y);
     %y = y-avgy;
     x = stats(prec(:,14)==0,2:3);
+    clear prec;
+    clear stats;
     % In http://lib.tkk.fi/Dipl/2010/urn100140.pdf a subset of size 223 is used as validation set.
     % Probably Solin did the same.
     [n, D] = size(x);
