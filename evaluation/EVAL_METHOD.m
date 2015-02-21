@@ -26,48 +26,28 @@ resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
 	rng(seed);
 
         resultOut.('hyps'){trial_id}=[];
-        resultOut.('sod'){trial_id} = zeros(m, 1);
-
-        disp(sprintf('testSoD: m = %d, trial %d.', m, trial_id));
 
         %----------------------------------------
         % Optimize hyperparameters.
         %----------------------------------------
-        hypTic=tic;
-        [hyp, theta_over_time, retvals] = feval([EXPERIMENT.METHOD '_hyper_opt'], EXPERIMENT, trainX, trainY, m, D);
-        hypTime = toc(hypTic);
-
-        %----------------------------------------
-        % Compute predictive mean and variance.
-        %----------------------------------------
-        predTic=tic;
-        %I just want the time
-        %TODO: replace with function
-        methodName = [EXPERIMENT.METHOD '_predict'];
-        [~, ~] = feval(methodName, EXPERIMENT, hyp, trainX, trainY, testX, retvals);
-        predTime=toc(predTic);
-        
+        [times, theta_over_time, mF, s2F, nlZ, mFT] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX);
         %----------------------------------------
         % Save data.
         %----------------------------------------
-        resultOut.('hyp_time')(trial_id, :) = theta_over_time(1, :);
-        num_hyps = size(unwrap(hyp), 1) + 1;
+        resultOut.('hyp_time')(trial_id, :) = times;
         
         % I just assignt the same prediction time
-        resultOut.('train_time')(trial_id, :) = predTime-testTime;
-        resultOut.('test_time')(trial_id, :) = testTime;
-        for i=1:size(theta_over_time, 2)
-            if theta_over_time(1, i) < 0, break, end
+        resultOut.('train_time')(trial_id, :) = 0; %predTime-testTime;
+        resultOut.('test_time')(trial_id, :) = 0; %testTime;
+        resultOut.('hyps'){trial_id} = []; %[resultOut.('hyps'){trial_id} rewrap(theta_over_time];
+        for i=1:size(times)
+            if times(i) < 0, break, end
             disp(sprintf('Calculating MSE for iteration %d', i)); 
-            resultOut.('hyps'){trial_id} = [resultOut.('hyps'){trial_id} theta_over_time(2:num_hyps, i)];
-            [mF, s2F, nlZ] = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, testX, retvals);
-            resultOut.('msll')(trial_id, i) = mnlp(mF,testY,s2F, meanTest, varTest);
-            resultOut.('mse')(trial_id, i)  = mse(mF,testY, meanTest, varTest);
-            resultOut.('llh')(trial_id, i) = nlZ;
-            mF = feval(methodName, EXPERIMENT, rewrap(hyp, theta_over_time(2:num_hyps, i)), trainX, trainY, trainX, retvals);
-            resultOut.('tmse')(trial_id, i)  = mse(mF,trainY, meanTrain, varTrain);
-
+            resultOut.('msll')(trial_id, i) = mnlp(mF(:, i),testY,s2F(:, i), meanTest, varTest);
+            resultOut.('mse')(trial_id, i)  = mse(mF(:, i),testY, meanTest, varTest);
+            resultOut.('tmse')(trial_id, i)  = mse(mFT(:, i),trainY, meanTrain, varTrain);
         end
+        resultOut.('llh')(trial_id, :) = nlZ;    
         resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
         eval(sprintf('%s=resultOut;', resultVarName));
         save(sprintf('%s%s_%s_fold%d', EXPERIMENT.RESULTS_DIR, resultVarName, EXPERIMENT.DATASET, EXPERIMENT.DATASET_FOLD), resultVarName);
