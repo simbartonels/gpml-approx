@@ -14,7 +14,7 @@ function [varargout] = gp(hyp, inf, mean, cov, lik, x, y, xs, ys)
 % probabilities are returned. Usage:
 %
 %   training: [nlZ dnlZ          ] = gp(hyp, inf, mean, cov, lik, x, y);
-% prediction: [ymu ys2 fmu fs2   ] = gp(hyp, inf, mean, cov, lik, x, y, xs);
+% prediction: [ymu ys2 fmu fs2 nlZ post] = gp(hyp, inf, mean, cov, lik, x, y, xs);
 %         or: [ymu ys2 fmu fs2 lp] = gp(hyp, inf, mean, cov, lik, x, y, xs, ys);
 %
 % where:

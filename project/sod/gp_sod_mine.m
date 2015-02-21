@@ -3,9 +3,9 @@ function [out1, out2, out3] = gp_sod_mine(logtheta, opt_iters, covfunc, likfunc,
 % gpr_sod - Gaussian Process regression, using the Subset of Data 
 % approximation. 
 % 
-% usage: [loghyper sod theta_over_time] = gpr_sod(logtheta, covfunc, likfunc, x, y, N, method,splitLen, 'split')
-%    or: [mu S2 nlZ] = gpr_sod(logtheta, covfunc, likfunc, x, y, N, method, xstar)
-%    or: [mu S2 nlZ] = gpr_sod(logtheta, covfunc, likfunc, x, y, sod, method, xstar)
+% usage: [loghyper sod theta_over_time] = gpr_sod(logtheta, opt_iters, covfunc, likfunc, x, y, N, method,splitLen, 'split')
+%    or: [mu S2 nlZ] = gpr_sod(logtheta, ~, covfunc, likfunc, x, y, N, method, xstar)
+%    or: [mu S2 nlZ] = gpr_sod(logtheta, ~, covfunc, likfunc, x, y, sod, method, xstar)
 %
 % where:
 %
