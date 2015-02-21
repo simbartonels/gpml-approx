@@ -1,4 +1,3 @@
-%TODO: copy&paste code!!!
 function [post, nlZ, dnlZ] = infSolinfast(hyp, mean, cov, lik, x, y)
 
 likstr = lik; if ~ischar(lik), likstr = func2str(lik); end 
@@ -26,6 +25,8 @@ elseif nargout == 2
 else
     [alpha, L, nlZ, dnlZ] = infSolinmex(M, unwrap(hyp), x, y);
 end
+%return inverse of A
+L = L'\(L\eye(size(L)))*exp(2*hyp.lik);
+post.L = L;
 post.alpha = alpha;                      % return the posterior parameters
-post.L  = L; % Sigma-inv(Kuu)
 end
