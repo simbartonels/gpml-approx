@@ -262,7 +262,7 @@ function testAgainstFullGP()
     
     %then let's make sure the naive implementation is correct
     indNoise = -Inf;
-    [ymu, ys2, ~, ~] = gp(smhyp, @infExact, [], {@covSMnaive, M, indNoise}, @likGauss, x, y, xs);
+    [ymu, ys2] = gp(smhyp, @infExact, [], {@covSMnaive, M, indNoise}, @likGauss, x, y, xs);
     nlZN = gp(smhyp, @infExact, [], {@covSMnaive, M, indNoise}, @likGauss, x, y);
     %nlZN = 0;
     %should deal the same output as the GP

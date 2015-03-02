@@ -91,7 +91,7 @@ end
       warning('You attempt classification using labels different from {+1,-1}\n')
     end
   end
-    if nargout==1
+    if (nargin == 7 && nargout <= 1) || (nargin >= 8 && nargout <= 4)
       [post nlZ] = inf(hyp, mean, cov, lik, x, y); dnlZ = {};
     else
       [post nlZ dnlZ] = inf(hyp, mean, cov, lik, x, y);
