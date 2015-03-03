@@ -110,6 +110,14 @@ elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
     %avgy = mean(y);
     %y = y-avgy;
     x = stats(prec(:,14)==0,2:3);
+    restore_seed = randi(32000);
+    seed = 0; %just that we always take the same shuffle
+    rng(seed);
+    p = randperm(size(x, 1));
+    x = x(p, :);
+    y = y(p);
+    rng(restore_seed);
+    
     clear prec;
     clear stats;
     % In http://lib.tkk.fi/Dipl/2010/urn100140.pdf a subset of size 223 is used as validation set.
