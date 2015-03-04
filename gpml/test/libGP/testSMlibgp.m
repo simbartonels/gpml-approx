@@ -1,8 +1,8 @@
 function testSMlibgp()
     %sd = 21988 %numerically very unstable scenario
     %sd = 8903 %llh breaks!
-    sd = 21371 %problems with L matrix?!
-    [x, y, ~, smhyp] = initEnvConcrete(sd);
+    %sd = 21371 %problems with L matrix?!
+    [x, y, ~, smhyp] = initEnvSM(sd);
     D = size(x, 2);
     M = (numel(smhyp.cov)-1-D)/D/2;
 
@@ -33,23 +33,4 @@ function testSMlibgp()
         arg
         error('Check gradients of nlZ!');
     end
-end
-
-function [x, y, xs, smhyp] = initEnvConcrete(sd)
-    if nargin == 0
-        [x, y, xs, smhyp] = initEnv();
-    else
-        [x, y, xs, smhyp] = initEnv(sd);
-    end
-    [n, D] = size(x);
-    logell = smhyp.cov(1:D);
-    lsf2 = smhyp.cov(D+1);
-
-    M = D+1;
-    V = randn([M, D]);
-    %make sure length scale parameters are larger than half of the original ls
-    logsigma = log(exp(2*randn([M, D]).^2)+repmat(exp(2*logell)', M, 1)/2)/2;
-
-    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
-        reshape(V, [M*D, 1]); lsf2+(log(2*pi)*D+sum(logell)*2)/4];
 end
