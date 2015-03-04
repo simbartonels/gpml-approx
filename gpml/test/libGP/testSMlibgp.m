@@ -2,7 +2,7 @@ function testSMlibgp()
     %sd = 21988 %numerically very unstable scenario
     %sd = 8903 %llh breaks!
     %sd = 21371 %problems with L matrix?!
-    [x, y, ~, smhyp] = initEnvSM(sd);
+    [x, y, ~, smhyp] = initEnvSM();
     D = size(x, 2);
     M = (numel(smhyp.cov)-1-D)/D/2;
 
@@ -14,6 +14,8 @@ function testSMlibgp()
     L_o = post.L;
     %[ymuS, ys2S, ~, ~, ~, post] = gp(smhyp, @infSMfast, [], {@covSM, M}, @likGauss, x, y, xs);
     [nlZ, dnlZ, post] = gp(smhyp, @infSMfast, [], {@covSM, M}, @likGauss, x, y);
+    %the GP returns always L<Eigen::Lower>
+    post.L = tril(post.L) + tril(post.L, -1)';
     diff = max(max(abs(L_o - post.L)));
     if diff > 1e-10
         error('Check computation of L matrix!');
@@ -33,4 +35,5 @@ function testSMlibgp()
         arg
         error('Check gradients of nlZ!');
     end
+    disp('Test completed succesfully.');
 end
