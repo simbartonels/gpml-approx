@@ -102,24 +102,14 @@ elseif strcmp(EXPERIMENT.DATASET, 'DEBUG')
     testX = randn([n_test, D]);
     testY = randn([n_test, 1]);
 elseif strcmp(EXPERIMENT.DATASET, 'PUMADYN')
-    trainX=load('PUMADYN/Dataset.data');
+    puma=load('PUMADYN/pumadyn32nm.mat');
+    trainX = puma.X_tr;
+    trainY = puma.T_tr;
+    testX = puma.X_tst;
+    testY = puma.T_tst;
+    clear puma;
     [n, D] = size(trainX);
-    trainY = trainX(:, D);
-    D = D - 1;
-    trainX = trainX(:, 1:D);
-    restore_seed = randi(32000);
-    seed = 0; %just that we always take the same shuffle
-    rng(seed);
-    p = randperm(n);
-    trainX = trainX(p, :);
-    trainY = trainY(p);
-    rng(restore_seed);
-    n_test = 1024;
-    testX = trainX(n-n_test:n, :);
-    testY = trainY(n-n_test:n, :);
-    n = n - n_test;
-    trainX = trainX(1:n, :);
-    trainY = trainY(1:n, :);
+    n_test = size(testX);
 elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
     EXPERIMENT.DATASET_FOLDS = 10;
     prec = load('PRECIPITATION/USprec1.txt');
