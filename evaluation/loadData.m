@@ -101,10 +101,29 @@ elseif strcmp(EXPERIMENT.DATASET, 'DEBUG')
     trainY = randn([n, 1]);
     testX = randn([n_test, D]);
     testY = randn([n_test, 1]);
+elseif strcmp(EXPERIMENT.DATASET, 'PUMADYN')
+    trainX=load('PUMADYN/Dataset.data');
+    [n, D] = size(trainX);
+    trainY = trainX(:, D);
+    D = D - 1;
+    trainX = trainX(:, 1:D);
+    restore_seed = randi(32000);
+    seed = 0; %just that we always take the same shuffle
+    rng(seed);
+    p = randperm(n);
+    trainX = trainX(p, :);
+    trainY = trainY(p);
+    rng(restore_seed);
+    n_test = 1024;
+    testX = trainX(n-n_test:n, :);
+    testY = trainY(n-n_test:n, :);
+    n = n - n_test;
+    trainX = trainX(1:n, :);
+    trainY = trainY(1:n, :);
 elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
-    EXPERIMENT.DATA_SET_FOLDS = 10;
-    prec = load('PRECIPITATION\\USprec1.txt');
-    stats = load('PRECIPITATION\\USprec2.txt');
+    EXPERIMENT.DATASET_FOLDS = 10;
+    prec = load('PRECIPITATION/USprec1.txt');
+    stats = load('PRECIPITATION/USprec2.txt');
     y = sum(prec(prec(:,14)==0,2:13),2);
     y = y/100;
     %avgy = mean(y);
@@ -132,7 +151,6 @@ elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
     trainY = y([1:(a-1),(b+1):n]);
     n = size(trainX, 1);
 end
-
 %------------------------------------------------------------------------
 % DON'T MODIFY THIS.
 % Normalize data to zero mean, variance one. 
