@@ -7,12 +7,16 @@ function testHSM2()
 end
 
 function testAgainstSEard()
+    %sd = 6215
+    %sd = 7542
     [x, ~, z, hyp2] = initEnv();
-    M = 60;
+    M = 64;
     D = size(x, 2);
     hyp2.cov(1:D) = 1./(1+randn(D, 1).^2)-2;
-
-    L = 1.2 * max(abs(x));%rand(1, D);
+    hyp2.cov(D+1) = 0; %(randn(1)^2 / 2);
+    sf2 = exp(2 * hyp2.cov(D+1))
+    ls = exp(2* hyp2.cov(1:D))
+    L = 4 * max(abs([x; z])) / 3 %rand(1, D);
     [J, lambda] = initHSM(M, D, L);
 
     cov_deg2 = {@covDegenerate, {@degHSM2, M, L, J, lambda}};
@@ -26,8 +30,9 @@ function testAgainstSEard()
     k = covSEard(hyp2.cov, x, z);
     % Taking maximum here is not a good idea since the approximation is
     % sometimes quite bad. I'm satisfied when the median agrees.
-    diff = median(median(abs((k-k2).^2./k)));
-    if diff > (1e-9)^(1/D)
+    diff = max(max(abs((k-k2).^2./k)));
+    if diff > (1e-4)^(1/D)
+        abs_diff = max(max(abs(k-k2)))
         diff
         error('DegHSM2 and SE_ard disagree!'); 
     end
