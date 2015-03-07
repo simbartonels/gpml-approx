@@ -16,6 +16,7 @@ resultOut.('test_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
 resultOut.N_train = length(trainY);
 resultOut.N_test = length(testY);
 resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
+resultOut.('hyp_over_time') = {};
 
     m = EXPERIMENT.M;
 
@@ -24,8 +25,6 @@ resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
 	EXPERIMENT.SEED = seed;
 	rng('default');
 	rng(seed);
-
-        resultOut.('hyps'){trial_id}=[];
 
         %----------------------------------------
         % Optimize hyperparameters.
@@ -39,14 +38,19 @@ resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
         % I just assignt the same prediction time
         resultOut.('train_time')(trial_id, :) = 0; %predTime-testTime;
         resultOut.('test_time')(trial_id, :) = 0; %testTime;
-        resultOut.('hyps'){trial_id} = []; %[resultOut.('hyps'){trial_id} rewrap(theta_over_time];
+        %resultOut.('hyps'){trial_id} = [resultOut.('hyps'){trial_id} theta_over_time]; %[resultOut.('hyps'){trial_id} rewrap(theta_over_time];
+        resultOut.('hyp_over_time'){trial_id} = theta_over_time;
         for i=1:size(times)
             if times(i) < 0, break, end
             disp(sprintf('Calculating MSE for iteration %d', i)); 
             resultOut.('msll')(trial_id, i) = mnlp(mF(:, i),testY,s2F(:, i), meanTest, varTest);
             resultOut.('mse')(trial_id, i)  = mse(mF(:, i),testY, meanTest, varTest);
-            resultOut.('tmse')(trial_id, i)  = mse(mFT(:, i),trainY, meanTrain, varTrain);
+            %resultOut.('tmse')(trial_id, i)  = mse(mFT(:, i),trainY, meanTrain, varTrain);
         end
+        disp('Training error: ');
+        if size(mFT, 2) > 1, mFT = mFT(:, size(times)); end
+        mse(mFT, trainY, meanTrain, varTrain)
+
         resultOut.('llh')(trial_id, :) = nlZ;    
         resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
         eval(sprintf('%s=resultOut;', resultVarName));
