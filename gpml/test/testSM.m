@@ -304,9 +304,10 @@ function testGradients()
 end
 
 function [x, y, xs, smhyp] = initEnvConcrete(sd)
+    M = 3;
     if nargin == 0
-        [x, y, xs, smhyp] = initEnvSM();
+        [x, y, xs, smhyp] = initEnvSM(M);
     else
-        [x, y, xs, smhyp] = initEnvSM(sd);
+        [x, y, xs, smhyp] = initEnvSM(M, sd);
     end
 end

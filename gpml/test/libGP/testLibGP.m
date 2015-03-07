@@ -3,23 +3,27 @@ function testLibGP()
 %   Detailed explanation goes here
 %test against full GP
 testFullGP();
+testSM();
 testHSM();
 disp('Test completed succesfully.');
 end
 
-function testFullGP()
-[trainX, trainY, testX, hyp] = initEnv();
-[alpha, L, nlZ, mF, s2F, mFT] = infLibGPmex(trainX, trainY, testX, 'full', 'CovSum (CovSEard, CovNoise)', unwrap(hyp));
-[mF_o, s2F_o, ~, ~, nlZ_o, post] = gp(hyp, @infExact, [], {@covSEard}, @likGauss, trainX, trainY, testX);
-mFT_o = gp(hyp, @infExact, [], {@covSEard}, @likGauss, trainX, trainY, trainX);
-
+function abstractTest(trainX, trainY, testX, hyp, inf, cov, infLibGP, M, bf)
+[alpha, L, nlZ, mF, s2F] = infLibGPmex(trainX, trainY, testX, infLibGP, 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, bf);
+[~, ~, ~, mFT, ~] = infLibGPmex(trainX, trainY, trainX, infLibGP, 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, bf);
+[mF_o, s2F_o, ~, ~, nlZ_o, post] = gp(hyp, inf, [], cov, @likGauss, trainX, trainY, testX);
+mFT_o = gp(hyp, inf, [], cov, @likGauss, trainX, trainY, trainX);
 m1 = 'GPML';
 m2 = 'LibGP';
-checkError(mF_o, mF, m1, m2, 'test mean predictions');
-checkError(s2F_o, s2F, m1, m2, 'test variance predictions');
-checkError(mFT_o, mFT, m1, m2, 'training mean predictions');
 checkError(nlZ_o, nlZ, m1, m2, 'log-likelihood');
+checkError(mF_o, mF, m1, m2, 'test mean predictions');
+checkError(mFT_o, mFT, m1, m2, 'training mean predictions');
+checkError(s2F_o, s2F, m1, m2, 'test variance predictions');
+end
 
+function testFullGP()
+[trainX, trainY, testX, hyp] = initEnv();
+abstractTest(trainX, trainY, testX, hyp, @infExact, {@covSEard}, 'full', 1, '');
 end
 
 function testHSM()
@@ -28,17 +32,13 @@ D = size(trainX, 2);
 if D > 2, error('Test assumes D = 2'); end
 M = 4;
 m = 2;
-l = 4*2.2 *ones([1, D])/3
-
-[alpha, L, nlZ, mF, s2F, mFT] = infLibGPmex(trainX, trainY, testX, 'Solin', 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, 'Solin');
-
+l = 4*max(trainX)/3
 [ J, lambda ] = initHSM( m, D, l );
-[mF_o, s2F_o, ~, ~, nlZ_o, post] = gp(hyp, @infExactDegKernel, [], {@covDegenerate, {@degHSM2, m, l, J, lambda}}, @likGauss, trainX, trainY, testX);
-mFT_o = gp(hyp, @infExactDegKernel, [], {@covDegenerate, {@degHSM2, m, l, J, lambda}}, @likGauss, trainX, trainY, trainX);
-m1 = 'GPML';
-m2 = 'LibGP';
-checkError(nlZ_o, nlZ, m1, m2, 'log-likelihood');
-checkError(mF_o, mF, m1, m2, 'test mean predictions');
-checkError(mFT_o, mFT, m1, m2, 'training mean predictions');
-checkError(s2F_o, s2F, m1, m2, 'test variance predictions');
+abstractTest(trainX, trainY, testX, hyp, @infExactDegKernel, {@covDegenerate, {@degHSM2, m, l, J, lambda}}, 'Solin', M, ' ');
+end
+
+function testSM()
+M = 10;
+[trainX, trainY, testX, hyp] = initEnvSM(M);
+abstractTest(trainX, trainY, testX, hyp, @infFITC, {@covSM, M}, 'FIC', M, 'SparseMultiScaleGP');
 end

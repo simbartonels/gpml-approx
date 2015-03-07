@@ -1,8 +1,10 @@
-function [ x, y, xs, smhyp ] = initEnvSM( sd )
+function [ x, y, xs, smhyp ] = initEnvSM( M, sd )
 %INITENVSM Summary of this function goes here
 %   Detailed explanation goes here
 
     if nargin == 0
+        error('Not enough parameters!');
+    elseif nargin >= 1
         [x, y, xs, smhyp] = initEnv();
     else
         [x, y, xs, smhyp] = initEnv(sd);
@@ -10,8 +12,6 @@ function [ x, y, xs, smhyp ] = initEnvSM( sd )
     [n, D] = size(x);
     logell = smhyp.cov(1:D);
     lsf2 = smhyp.cov(D+1);
-    % Now let's check that the naive and actual implementation agree.
-    M = 3;
     V = randn([M, D]);
     %make sure length scale parameters are larger than half of the original ls
     logsigma = log(exp(2*randn([M, D]).^2)+repmat(exp(2*logell)', M, 1)/2)/2;
