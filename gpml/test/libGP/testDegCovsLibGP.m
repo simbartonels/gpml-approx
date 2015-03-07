@@ -10,15 +10,15 @@ function testSolin()
     seed = 0;
     [z, ~, ~, hyp] = initEnv();
     [n, D] = size(z);
-    L = 1.2 * ones([1, D]);
+    L = 4 * ones([1, D])
     M = floor((n-1)^(1/D));
     [J, lambda] = initHSM(M, D, L);
     bf = {@degHSM2, M, L, J, lambda};
-    phi_o = feval(bf{:}, hyp.cov, z);
-    phi = covDegFast(bf, seed, D^M, D, unwrap(hyp), [], z);
-    checkError(phi_o, phi, 'GPML', 'LibGP', 'basis function');
     Sigma_o = diag(feval(bf{:}, hyp.cov));
-    Sigma = covDegFast(bf, seed, D^M, D, unwrap(hyp));
+    Sigma = covDegFast(bf, seed, M^D, D, unwrap(hyp));
+    phi_o = feval(bf{:}, hyp.cov, z)
+    phi = covDegFast(bf, seed, M^D, D, unwrap(hyp), [], z)
+    checkError(phi_o, phi, 'GPML', 'LibGP', 'basis function');
     checkError(Sigma_o, Sigma, 'GPML', 'LibGP', 'weight prior');
 end
 
