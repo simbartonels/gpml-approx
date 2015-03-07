@@ -32,7 +32,7 @@ D = size(trainX, 2);
 if D > 2, error('Test assumes D = 2'); end
 M = 4;
 m = 2;
-l = 4*max(trainX)/3
+l = 4*max(abs(trainX))/3
 [ J, lambda ] = initHSM( m, D, l );
 abstractTest(trainX, trainY, testX, hyp, @infExactDegKernel, {@covDegenerate, {@degHSM2, m, l, J, lambda}}, 'Solin', M, ' ');
 end

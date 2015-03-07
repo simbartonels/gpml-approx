@@ -5,7 +5,7 @@ function testSolinLibGP()
     actualM = n - 1;
     M = floor(actualM^(1/D));
 
-    l = 4 * max(x) / 3;
+    l = 4 * max(abs(x)) / 3;
     [J, lambda] = initHSM(M, D, l);
     [nlZ_o, dnlZ_o, post] = gp(hyp, @infExactDegKernel, [], {@covDegenerate, {@degHSM2, M, l, J, lambda}}, @likGauss, x, y);
     alpha_o = post.alpha;
