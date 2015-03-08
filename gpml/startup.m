@@ -3,6 +3,9 @@
 % Copyright (c) by Carl Edward Rasmussen and Hannes Nickisch 2010-07-05.
 
 disp(['executing gpml startup script...']);
+if ~ispc %Linux?
+    setenv('LC_ALL', 'C');
+end
 
 OCT = exist('OCTAVE_VERSION') ~= 0;           % check if we run Matlab or Octave
 
@@ -21,7 +24,7 @@ addpath([mydir,'mean'])
 addpath([mydir,'util'])
 addpath([mydir,'test'])
 addpath([mydir, 'deg_cov'])
-addpath([mydir, 'deg_cov\\init'])
+addpath([mydir, 'deg_cov', filesep, 'init'])
 
 startup_test;
 
