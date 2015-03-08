@@ -101,6 +101,14 @@ elseif strcmp(EXPERIMENT.DATASET, 'DEBUG')
     trainY = randn([n, 1]);
     testX = randn([n_test, D]);
     testY = randn([n_test, 1]);
+elseif strcmp(EXPERIMENT.DATASET, 'CPU')
+    cpuset = load('CPU/cpu.mat');
+    trainX = cpuset.Xtrain';
+    trainY = cpuset.ytrain';
+    testX = cpuset.Xtest';
+    testY = cpuset.ytest';
+    [n, D] = size(trainX);
+    n_test = size(testY);
 elseif strcmp(EXPERIMENT.DATASET, 'PUMADYN')
     puma=load('PUMADYN/pumadyn32nm.mat');
     trainX = puma.X_tr;
@@ -151,10 +159,13 @@ trainYStd  = std(trainY);
 stdMatrix  = repmat(std(trainX), n, 1);
 trainX = (trainX - meanMatrix);
 trainX = trainX./stdMatrix;
-trainY = (trainY - trainYMean)./trainYStd;
+trainY = (trainY - trainYMean);
+trainY = trainY./trainYStd;
 
-testX  = (testX-repmat(meanMatrix(1,:), size(testX,1),1))./repmat(stdMatrix(1,:), size(testX,1),1);
-testY  = (testY - trainYMean)./trainYStd;
+testX  = (testX-repmat(meanMatrix(1,:), size(testX,1),1));
+testX = testX./repmat(stdMatrix(1,:), size(testX,1),1);
+testY  = (testY - trainYMean);
+testY = testY./trainYStd;
 
 % Reseed the rng.
 rand('seed', 100*sum(clock));
