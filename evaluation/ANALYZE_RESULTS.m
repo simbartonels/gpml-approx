@@ -27,8 +27,8 @@
 RESULTS_DIR = './Chalupka_Williams_Murray_Results/'; %
 me = mfilename;                                            % what is my filename
 mydir = which(me); mydir = mydir(1:end-2-numel(me));        % where am I located
-RESULTS_DIR = [mydir, 'results/'];
-PLOTS_DIR = [mydir, 'plots/']; % Ready plots go here.
+RESULTS_DIR = [mydir, 'results', filesep];
+PLOTS_DIR = [mydir, 'plots', filesep]; % Ready plots go here.
 DATASETS = {'PRECIPITATION'} % Plot data for these datasets only.
 METHODS = {'HSM'} % Plot data for these methods only.
 
@@ -106,7 +106,7 @@ for dset_id = 1:length(DATASETS)
         % Load data.
         load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
-        plot(results.hyp_time, results.mse, '-', 'Color', plot_colors{method_id});
+        plot(results.hyp_time, results.mse, 'x', 'Color', plot_colors{method_id});
         hold on;
         plots{method_id} = plot(mean(results.hyp_time), mean(results.mse), '.', 'Color', plot_colors{method_id});
         xlabel('Hyperparameter training time [s]');
