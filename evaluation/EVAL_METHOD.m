@@ -49,7 +49,8 @@ resultOut.('hyp_over_time') = {};
         end
         disp('Training error: ');
         if size(mFT, 2) > 1, mFT = mFT(:, size(times)); end
-        mse(mFT, trainY, meanTrain, varTrain)
+%        mse(mFT, trainY, meanTrain, varTrain)
+         mse(mFT, testY, meanTest, varTest)
         disp('NaNs or Infs: ');
         any(isnan(mFT) | isinf(abs(mFT)))
 
