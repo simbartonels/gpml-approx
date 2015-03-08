@@ -50,6 +50,8 @@ resultOut.('hyp_over_time') = {};
         disp('Training error: ');
         if size(mFT, 2) > 1, mFT = mFT(:, size(times)); end
         mse(mFT, trainY, meanTrain, varTrain)
+        disp('NaNs or Infs: ');
+        any(isnan(mFT) | isinf(abs(mFT)))
 
         resultOut.('llh')(trial_id, :) = nlZ;    
         resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
