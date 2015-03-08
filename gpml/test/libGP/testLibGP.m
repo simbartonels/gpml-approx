@@ -5,14 +5,16 @@ function testLibGP()
 testFullGP();
 testSM();
 testHSM();
+testFIC();
 disp('Test completed succesfully.');
 end
 
-function abstractTest(trainX, trainY, testX, hyp, inf, cov, infLibGP, M, bf)
+function abstractTest(trainX, trainY, testX, hyp, inf, cov, infLibGP, M, bf, hyp2)
+if nargin < 10, hyp2 = hyp; end
 [alpha, L, nlZ, mF, s2F] = infLibGPmex(trainX, trainY, testX, infLibGP, 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, bf);
 [~, ~, ~, mFT, ~] = infLibGPmex(trainX, trainY, trainX, infLibGP, 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, bf);
-[mF_o, s2F_o, ~, ~, nlZ_o, post] = gp(hyp, inf, [], cov, @likGauss, trainX, trainY, testX);
-mFT_o = gp(hyp, inf, [], cov, @likGauss, trainX, trainY, trainX);
+[mF_o, s2F_o, ~, ~, nlZ_o, post] = gp(hyp2, inf, [], cov, @likGauss, trainX, trainY, testX);
+mFT_o = gp(hyp2, inf, [], cov, @likGauss, trainX, trainY, trainX);
 m1 = 'GPML';
 m2 = 'LibGP';
 checkError(nlZ_o, nlZ, m1, m2, 'log-likelihood');
@@ -41,4 +43,16 @@ function testSM()
 M = 10;
 [trainX, trainY, testX, hyp] = initEnvSM(M);
 abstractTest(trainX, trainY, testX, hyp, @infFITC, {@covSM, M}, 'FIC', M, 'SparseMultiScaleGP');
+end
+
+function testFIC()
+M = 10;
+[trainX, trainY, testX, hyp2] = initEnv();
+logell = hyp2.cov(1:D);
+lsf2 = hyp2.cov(D+1);
+V = randn([M, D]);
+hyp = hyp2;
+hyp.cov = [logell; lsf2; reshape(V, [M*D, 1])];
+
+abstractTest(trainX, trainY, testX, hyp, @infFITC, {@covFITC, {@covSEard}, V}, 'FIC', M, 'FIC', hyp2);
 end
