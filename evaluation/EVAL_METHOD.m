@@ -48,9 +48,9 @@ resultOut.('hyp_over_time') = {};
             %resultOut.('tmse')(trial_id, i)  = mse(mFT(:, i),trainY, meanTrain, varTrain);
         end
         disp('Training error: ');
-        if size(mFT, 2) > 1, mFT = mFT(:, size(times)); end
+        if size(mFT, 2) > 1, mFT = mFT(:, size(times, 1)); end
         last_train_error = mse(mFT, trainY, meanTrain, varTrain)
-        last_test_error = mse(mF(:, size(times)), testY, meanTest, varTest)
+        last_test_error = mse(mF(:, size(times, 1)), testY, meanTest, varTest)
         disp('NaNs or Infs: ');
         any(isnan(mFT) | isinf(abs(mFT)))
 
