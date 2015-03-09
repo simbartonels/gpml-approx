@@ -18,9 +18,11 @@ function [times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, tr
     
     FIChyp = resultsFIC.hyp_over_time{1};
     ind = size(FIChyp, 2);
-    ind = 50 %TODO: remove
-    sf2 = FIChyp(D+1, ind);
-    ell = FIChyp(1:D, ind);
+    ind = 25 %TODO: remove
+    f = log(sqrt(prod(exp(FIChyp(1:D, ind)))*(2*pi)^D));
+    sf2 = 2 * FIChyp(D+1, ind)+f;
+
+    ell = 2 * FIChyp(1:D, ind);
     ellU = repmat(log(exp(2*ell)/2), [M, 1]);
     U = FIChyp((D+2):(D+1+D*M), ind);
     U = reshape(U, [M, D]); %little sanity check %TODO: Remove
