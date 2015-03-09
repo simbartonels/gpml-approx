@@ -2,8 +2,8 @@ function testDegCovsLibGP()
 %TESTDEGCOVS This function compares what the matlab implementation
 %covariance functions produce against what the libGP implementations do.
     testSolin();
-    testSM();
     testFIC();
+    testSM();
     disp('Test passed sucessfully.');
 end
 
@@ -15,12 +15,12 @@ function testSolin()
     M = floor((n-1)^(1/D));
     [J, lambda] = initHSM(M, D, L);
     bf = {@degHSM2, M, L, J, lambda};
-    Sigma_o = diag(feval(bf{:}, hyp.cov));
-    Sigma = covDegFast(bf, seed, M^D, D, unwrap(hyp));
+    iSigma_o = diag(1./feval(bf{:}, hyp.cov));
+    iSigma = covDegFast(bf, seed, M^D, D, unwrap(hyp));
     phi_o = feval(bf{:}, hyp.cov, z);
     phi = covDegFast(bf, seed, M^D, D, unwrap(hyp), [], z);
     checkError(phi_o, phi, 'GPML', 'LibGP', 'basis function');
-    checkError(Sigma_o, Sigma, 'GPML', 'LibGP', 'weight prior');
+    checkError(iSigma_o, iSigma, 'GPML', 'LibGP', 'weight prior');
 end
 
 function testSM()
@@ -33,12 +33,19 @@ function testSM()
     phi_o = covSM(M, hyp.cov, z, z); %yields Uvz
     phi = covDegFast(bf, seed, M, D, unwrap(hyp), [], z);
     checkError(phi_o, phi, 'GPML', 'LibGP', 'basis function');
-    [~, Sigma_o, ~] = covSM(M, hyp.cov, z);
+    [~, iSigma_o, ~] = covSM(M, hyp.cov, z);
     %bfmex will return the inverse with inducing noise added
-    Sigma_o = chol(Sigma_o+snu2*eye(M));
-    Sigma_o = solve_chol(Sigma_o, eye(M));
-    Sigma = covDegFast(bf, seed, M, D, unwrap(hyp));
-    checkError(Sigma_o, Sigma, 'GPML', 'LibGP', 'weight prior');
+    iSigma_o = iSigma_o+snu2*eye(M);
+    iSigma = covDegFast(bf, seed, M, D, unwrap(hyp));
+    checkError(iSigma_o, iSigma, 'GPML', 'LibGP', 'weight prior');
+    for p=1:size(hyp.cov)
+	[~, iSigma_o, ~] = covSM(M, hyp.cov, z, [], p);
+	iSigma = covDegFast(bf, seed, M, D, unwrap(hyp), [], [], p);
+	checkError(iSigma_o, iSigma, 'GPML', 'LibGP', sprintf('weight prior gradient %d', p));
+	[~, ~, phi_o] = covSM(M, hyp.cov, z, [], p);
+    	phi = covDegFast(bf, seed, M, D, unwrap(hyp),[], z, p);
+	checkError(phi_o, phi, 'GPML', 'LibGP', sprintf('basis function gradient %d', p));
+    end
 end
 
 function testFIC()
@@ -56,10 +63,18 @@ function testFIC()
     phi_o = covFITC({@covSEard}, U, hyp2.cov, z, z);
     phi = covDegFast(bf, seed, M, D, unwrap(hyp), [], z);
     checkError(phi_o, phi, 'GPML', 'LibGP', 'basis function');
-    [~, Sigma_o, ~] = covFITC({@covSEard}, U, hyp2.cov, z);
+    [~, iSigma_o, ~] = covFITC({@covSEard}, U, hyp2.cov, z);
     %bfmex will return the inverse with inducing noise added
-    Sigma_o = chol(Sigma_o+snu2*eye(M));
-    Sigma_o = solve_chol(Sigma_o, eye(M));
-    Sigma = covDegFast(bf, seed, M, D, unwrap(hyp));
-    checkError(Sigma_o, Sigma, 'GPML', 'LibGP', 'weight prior');
+    iSigma_o = iSigma_o+snu2*eye(M);
+    iSigma = covDegFast(bf, seed, M, D, unwrap(hyp));
+    checkError(iSigma_o, iSigma, 'GPML', 'LibGP', 'weight prior');
+
+    for p=1:size(hyp2.cov)
+	[~, ~, phi_o] = covFITC({@covSEard}, U, hyp2.cov, z, [], p);
+    	phi = covDegFast(bf, seed, M, D, unwrap(hyp), [], z, p);
+	checkError(phi_o, phi, 'GPML', 'LibGP', sprintf('basis function gradient %d', p));
+	[~, iSigma_o, ~] = covFITC({@covSEard}, U, hyp2.cov, z, [], p);
+	iSigma = covDegFast(bf, seed, M, D, unwrap(hyp), [], [], p);
+	checkError(iSigma_o, iSigma, 'GPML', 'LibGP', sprintf('weight prior gradient %d', p));
+    end
 end

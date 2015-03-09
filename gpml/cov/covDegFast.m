@@ -12,7 +12,13 @@ end
 
 % determine mode
 if nargin < 7, z = []; end
-dg = strcmp(z,'diag') && numel(z)>0;       
+dg = strcmp(z,'diag') && numel(z)>0;
+
+if isempty(x) & isempty(z)
+    %gradient of weight prior demanded
+    K = bfmexgradient(convertDegCovNameToLibGPMethodName(bf1), seed, M, unwrap(hyp), D, i-1);
+    return;
+end
 
 n = size(x, 1);
 if nargin <= 7
@@ -24,8 +30,7 @@ if nargin <= 7
         K = bfmex(convertDegCovNameToLibGPMethodName(bf1), seed, M, unwrap(hyp), D, z);
     end
 else                                                        % derivatives
-    %TODO call mex function but check that we actually need that
-    K = feval(bf{:}, hyp, z, i);
+    K = bfmexgradient(convertDegCovNameToLibGPMethodName(bf1), seed, M, unwrap(hyp), D, i-1, z);
 end
 end
 
