@@ -48,6 +48,7 @@ end
 function testFIC()
 M = 10;
 [trainX, trainY, testX, hyp2] = initEnv();
+D = size(trainX, 2);
 logell = hyp2.cov(1:D);
 lsf2 = hyp2.cov(D+1);
 V = randn([M, D]);
