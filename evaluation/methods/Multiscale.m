@@ -1,7 +1,7 @@
 function [times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, trainX, trainY, testX)
-    filename = sprintf('resultsSoD_%s_fold%d.mat', EXPERIMENT.DATASET, EXPERIMENT.DATASET_FOLD);
-    resultsSoD = load([EXPERIMENT.RESULTS_DIR filename]);
-    resultsSoD = resultsSoD.resultsSoD;
+    filename = sprintf('resultsFIC_%s_fold%d.mat', EXPERIMENT.DATASET, EXPERIMENT.DATASET_FOLD);
+    resultsFIC = load([EXPERIMENT.RESULTS_DIR filename]);
+    resultsFIC = resultsFIC.resultsFIC;
     D = size(trainX, 2);
     M = EXPERIMENT.M;
     sn = 0.25; hyp.lik = log(sn);
@@ -16,11 +16,14 @@ function [times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, tr
     ell = zeros(D,1);
     sf2 = 0;
     
-    SoDhyp = resultsSoD.hyp_over_time{1};
-    ind = size(SoDhyp, 2);
-    ell = SoDhyp(1:D, ind);
-    sf2 = SoDhyp(D+1, ind);
-    hyp.lik = SoDhyp(D+2, ind);
+    FIChyp = resultsFIC.hyp_over_time{1};
+    ind = size(FIChyp, 2);
+    ell = FIChyp(1:D, ind);
+    sf2 = FIChyp(D+1, ind);
+    U = FIChyp((D+2):(D+1+D*M), ind);
+    U = reshape(U, [M, D]); %little sanity check %TODO: Remove
+    U = reshape(U, [M*D, 1]);
+    hyp.lik = FIChyp(size(FIChyp, 1), ind);
 
     hyp.cov = [ell; U; ellU; sf2];
     hyp = unwrap(hyp);    
