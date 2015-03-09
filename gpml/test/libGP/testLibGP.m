@@ -11,9 +11,11 @@ end
 
 function abstractTest(trainX, trainY, testX, hyp, inf, cov, infLibGP, M, bf, hyp2)
 if nargin < 10, hyp2 = hyp; end
-[alpha, L, nlZ, mF, s2F] = infLibGPmex(trainX, trainY, testX, infLibGP, 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, bf);
+[alpha, L, nlZ, mF, s2F, nlZd] = infLibGPmex(trainX, trainY, testX, infLibGP, 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, bf);
 [~, ~, ~, mFT, ~] = infLibGPmex(trainX, trainY, trainX, infLibGP, 'CovSum (CovSEard, CovNoise)', unwrap(hyp), M, bf);
 [mF_o, s2F_o, ~, ~, nlZ_o, post] = gp(hyp2, inf, [], cov, @likGauss, trainX, trainY, testX);
+[~, nlZd_o] =  gp(hyp2, inf, [], cov, @likGauss, trainX, trainY);
+%nlZd_o = unwrap(nlZd_o);
 mFT_o = gp(hyp2, inf, [], cov, @likGauss, trainX, trainY, trainX);
 m1 = 'GPML';
 m2 = 'LibGP';
@@ -21,6 +23,10 @@ checkError(nlZ_o, nlZ, m1, m2, 'log-likelihood');
 checkError(mF_o, mF, m1, m2, 'test mean predictions');
 checkError(mFT_o, mFT, m1, m2, 'training mean predictions');
 checkError(s2F_o, s2F, m1, m2, 'test variance predictions');
+nlZdcov = nlZd(1:size(nlZd_o.cov));
+nlZdlik = nlZd(size(nlZd, 1));
+checkError(nlZd_o.lik, nlZdlik, m1, m2, 'noise log-likelihood gradient');
+checkError(nlZd_o.cov, nlZdcov, m1, m2, 'log-likelihood gradients');
 end
 
 function testFullGP()
