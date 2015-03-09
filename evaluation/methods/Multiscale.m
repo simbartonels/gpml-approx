@@ -18,14 +18,16 @@ function [times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, tr
     
     FIChyp = resultsFIC.hyp_over_time{1};
     ind = size(FIChyp, 2);
-    ell = FIChyp(1:D, ind);
+    ind = 50 %TODO: remove
     sf2 = FIChyp(D+1, ind);
+    ell = FIChyp(1:D, ind);
+    ellU = repmat(log(exp(2*ell)/2), [M, 1]);
     U = FIChyp((D+2):(D+1+D*M), ind);
     U = reshape(U, [M, D]); %little sanity check %TODO: Remove
     U = reshape(U, [M*D, 1]);
     hyp.lik = FIChyp(size(FIChyp, 1), ind);
 
     hyp.cov = [ell; U; ellU; sf2];
-    hyp = unwrap(hyp);    
+    hyp = unwrap(hyp);
     [times, theta_over_time, mF, s2F, nlZ, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'FIC', 'CovSum (CovSEard, CovNoise)', unwrap(hyp), 'SparseMultiScaleGP');
 end
