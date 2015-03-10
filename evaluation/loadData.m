@@ -94,13 +94,24 @@ elseif strcmp(EXPERIMENT.DATASET,'SARCOS')
     testX  = test(:,1:D); testY = test(:,D+1);
     
 elseif strcmp(EXPERIMENT.DATASET, 'DEBUG')
-    n = 100;
-    D = 2;
+    n = 42;
+    D = 3;
     n_test = 10;
     trainX = randn([n, D]);
     trainY = randn([n, 1]);
     testX = randn([n_test, D]);
     testY = randn([n_test, 1]);
+elseif strcmp(EXPERIMENT.DATASET, 'CT_SLICES')
+    disp('Loading file...');
+    ctslices = csvread('CT_SLICES/slice_localization_data.csv', 1);
+    n = 4280;
+    D = 384;
+    trainX = ctslices(1:n, 2:D); %leave out Patient ID
+    trainY = ctslices(1:n, D+2);
+    n_test = size(ctslices, 1) - n;
+    testX = ctslices(n+1:n+n_test, 2:D);
+    testY = ctslices(n+1:n+n_test, D+2);
+    clear ctsclices;
 elseif strcmp(EXPERIMENT.DATASET, 'CPU')
     cpuset = load('CPU/cpu.mat');
     trainX = cpuset.Xtrain';
@@ -156,7 +167,9 @@ end
 meanMatrix = repmat(mean(trainX), n, 1);
 trainYMean = mean(trainY);
 trainYStd  = std(trainY);
+trainYStd(trainYStd == 0) = 1; % we don't want to divide by zero.
 stdMatrix  = repmat(std(trainX), n, 1);
+stdMatrix(stdMatrix == 0) = 1;
 trainX = (trainX - meanMatrix);
 trainX = trainX./stdMatrix;
 trainY = (trainY - trainYMean);
@@ -166,6 +179,11 @@ testX  = (testX-repmat(meanMatrix(1,:), size(testX,1),1));
 testX = testX./repmat(stdMatrix(1,:), size(testX,1),1);
 testY  = (testY - trainYMean);
 testY = testY./trainYStd;
+
+if any(any(isnan(trainX) | isinf(trainX))), error('Training set contains NaN Values!'); end
+if any(any(isnan(trainY) | isinf(trainY))), error('Training targets contains NaN Values!'); end
+if any(any(isnan(testX) | isinf(testX))), error('Test set contains NaN Values!'); end
+if any(any(isnan(testY) | isinf(testY))), error('Training targets contains NaN Values!'); end
 
 % Reseed the rng.
 rand('seed', 100*sum(clock));
