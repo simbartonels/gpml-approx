@@ -7,6 +7,7 @@ function testSM()
     testGradients();
     testFITCisSpecialCase();
     %testFailures();
+    disp('Test completed succesfully');
 end
 
 function testFITCMatrixRelations()
@@ -51,19 +52,14 @@ end
 
 function testFITCisSpecialCase()
     [x, y, xs, hyp] = initEnv();
+    %Setting the noise to 0 also kicks out the inducing noise.
+    hyp.lik = -Inf;
     M = 4;
     D = size(x, 2);
-    
-    % TODO: it is probably better to define g as a kernel
-    logell = 2 * hyp.cov(1:D);
-    f = (log(2*pi)*D+sum(logell))/2;
-    f = log(sqrt(prod(exp(logell))*(2*pi)^D));
-    lsf = 2 * hyp.cov(D+1)+f;
-    logsigma = repmat(logell'-log(2), M, 1);
     V = randn([M, D]);
-    smhyp.lik = hyp.lik;
-    smhyp.cov = [logell; reshape(logsigma, [M*D, 1]); ...
-        reshape(V, [M*D, 1]); lsf];
+    smhypfull = FIC_params_to_Multiscale(unwrap(hyp), D, M, V);
+    smhyp.cov = smhypfull(1:size(smhypfull, 1)-1);
+    smhyp.lik = smhypfull(size(smhypfull, 1));
     [ymu, ys2] = gp(hyp, @infFITC, [], {@covFITC, {@covSEard}, V}, @likGauss, x, y, xs);
     %testing against FITCimpl and not with naive for numeric stability
     [ymuE, ys2E] = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y, xs);
@@ -72,9 +68,9 @@ function testFITCisSpecialCase()
     %nlZE = gp(smhyp, @infExact, [], {@covSMnaive, M, logindnoise}, @likGauss, x, y);
     nlZE = gp(smhyp, @infFITC, [], {@covSM, M}, @likGauss, x, y);
     
-    worst_diff_fitc = [max((ymu-ymuE).^2), max((ys2-ys2E).^2), nlZ - nlZE]
-    if any(abs(worst_diff_fitc) > 1e-13) 
-        error('FITC is not a special case! Make sure the inducing input noise set to zero.');
+    worst_diff_fitc = [max(max(abs((ymu-ymuE)./ymu))), max(max(abs((ys2-ys2E)./ys2))), (nlZ - nlZE)./nlZ]
+    if any(abs(worst_diff_fitc) > 1e-10) 
+        error('FITC is not a special case! Is inducing noise 0?');
     end
 end
 
