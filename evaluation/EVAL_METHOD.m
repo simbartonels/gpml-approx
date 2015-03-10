@@ -29,7 +29,7 @@ resultOut.('hyp_over_time') = {};
         %----------------------------------------
         % Optimize hyperparameters.
         %----------------------------------------
-        [times, theta_over_time, mF, s2F, nlZ, mFT] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX);
+        [times, theta_over_time, mF, s2F, nlZ, mFT] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
         %----------------------------------------
         % Save data.
         %----------------------------------------
