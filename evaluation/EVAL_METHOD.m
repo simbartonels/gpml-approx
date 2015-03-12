@@ -58,5 +58,5 @@ resultOut.('hyp_over_time') = {};
         resultOut.('llh')(trial_id, :) = nlZ;    
         resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
         eval(sprintf('%s=resultOut;', resultVarName));
-        save(sprintf('%s%s_%s_fold%d', EXPERIMENT.RESULTS_DIR, resultVarName, EXPERIMENT.DATASET, EXPERIMENT.DATASET_FOLD), resultVarName);
+        save(sprintf('%s%s_%s_fold%d_M%d', EXPERIMENT.RESULTS_DIR, resultVarName, EXPERIMENT.DATASET, EXPERIMENT.DATASET_FOLD, EXPERIMENT.M), resultVarName);
     end
