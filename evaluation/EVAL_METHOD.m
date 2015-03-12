@@ -25,6 +25,7 @@ resultOut.('hyp_over_time') = {};
 	EXPERIMENT.SEED = seed;
 	rng('default');
 	rng(seed);
+    resultsOut.('seeds')(trial_id) = seed;
 
         %----------------------------------------
         % Optimize hyperparameters.
