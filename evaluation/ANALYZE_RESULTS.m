@@ -24,13 +24,13 @@
 % and California Institute of Technology, 2012
 % kjchalup@caltech.edu
 
-RESULTS_DIR = './Chalupka_Williams_Murray_Results/'; %
 me = mfilename;                                            % what is my filename
 mydir = which(me); mydir = mydir(1:end-2-numel(me));        % where am I located
 RESULTS_DIR = [mydir, 'results', filesep];
 PLOTS_DIR = [mydir, 'plots', filesep]; % Ready plots go here.
-DATASETS = {'PRECIPITATION'} % Plot data for these datasets only.
-METHODS = {'HSM'} % Plot data for these methods only.
+DATASETS = {'CT_SLICES'} % Plot data for these datasets only.
+METHODS = {'FastFood'} % Plot data for these methods only.
+Ms = {2048}
 
 plot_colors = {'r', 'g', 'b', 'k'}; % At least as many colors as methods 
                                     % plotted. 
@@ -42,14 +42,20 @@ fold = '4'
 figure, close
 for dset_id = 1:length(DATASETS)
     dataset = DATASETS{dset_id};
-    %----------------------------------------
-    % Plot MSLL vs hyper-time.
-    %----------------------------------------
-    figure 'visible' 'off';
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         % Load data.
-        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
+        load(sprintf('%sresults%s_%s_fold%s_M%d', RESULTS_DIR, method, dataset, fold, Ms{method_id}));        
+    end
+end
+for dset_id = 1:length(DATASETS)
+    dataset = DATASETS{dset_id};
+    figure 'visible' 'off';
+    %----------------------------------------
+    % Plot MSLL vs hyper-time.
+    %----------------------------------------
+    for method_id = 1:length(METHODS)
+        method = METHODS{method_id};
         results = eval(sprintf('results%s', method));
         hold on;
         plot(results.hyp_time, results.msll, '-', 'Color', plot_colors{method_id});
@@ -84,8 +90,6 @@ for dset_id = 1:length(DATASETS)
     figure('visible', 'off');
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
-        % Load data.
-        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.test_time/results.N_test, results.msll, '-', 'Color', plot_colors{method_id});
         hold on;
@@ -103,8 +107,6 @@ for dset_id = 1:length(DATASETS)
     figure('visible', 'off');
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
-        % Load data.
-        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.hyp_time, results.mse, 'x', 'Color', plot_colors{method_id});
         hold on;
@@ -123,8 +125,6 @@ for dset_id = 1:length(DATASETS)
     figure('visible', 'off');
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
-        % Load data.
-        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.hyp_time, results.tmse, '.', 'Color', plot_colors{method_id});
         hold on;
@@ -143,8 +143,6 @@ for dset_id = 1:length(DATASETS)
     figure('visible', 'off');
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
-        % Load data.
-        load(sprintf('%sresults%s_%s_fold%s', RESULTS_DIR, method, dataset, fold));
         results = eval(sprintf('results%s', method));
         plot(results.test_time/results.N_test, results.mse, '.', 'Color', plot_colors{method_id});
         hold on;
