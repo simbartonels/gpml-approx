@@ -1,3 +1,4 @@
+error('Write a script that warns of existing result files and which extends the results obtained.');
 % 
 %datasets = {'PRECIPITATION'};%, 'CHEM', 'SARCOS'};
 datasets = {'PRECIPITATION'};
