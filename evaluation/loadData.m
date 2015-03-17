@@ -29,7 +29,7 @@ if ~isfield(EXPERIMENT, 'DATASET')
 end
 
 EXPERIMENT.DATA_SET_FOLDS = 1;
-
+rng('default');
 %----------------------------------------
 % MODIFY THIS TO
 % ADD YOUR OWN DATASET PREPROCESSING.
