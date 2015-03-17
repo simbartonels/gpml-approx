@@ -5,27 +5,47 @@ varTrain=var(trainY);
 meanTrain=mean(trainY);
 
 len = abs(EXPERIMENT.NUM_HYPER_OPT_ITERATIONS);
-resultOut.('msll') = zeros(EXPERIMENT.NUM_TRIALS, len);
-resultOut.('mse') = zeros(EXPERIMENT.NUM_TRIALS, len);;
-resultOut.('llh') = zeros(EXPERIMENT.NUM_TRIALS, len);;
-resultOut.('tmse') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+%check if there already some results
 
-resultOut.('hyp_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
-resultOut.('train_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
-resultOut.('test_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
-resultOut.N_train = length(trainY);
-resultOut.N_test = length(testY);
-resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
-resultOut.('hyp_over_time') = {};
+resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
+results_file = sprintf('%s%s%s%s%s_fold%d_M%d.mat', EXPERIMENT.RESULTS_DIR, '', EXPERIMENT.DATASET, filesep, resultVarName, EXPERIMENT.DATASET_FOLD, EXPERIMENT.M)
+error('');
+if exist(results_file, 'file') == 2
+	disp('WARNING: An experiment results file already exists for this configuration. Attempting continuation of the experiment.');
+	load(results_file);
+	resultsOut = eval(resultVarName);
+        [trials_old, len_old] = size(resultOut.('hyp_time'));
+	if len_old ~= len
+		error('The current number of hyper-parameter optimization steps (%d) is different from the previous number of steps (%d). This is not allowed yet.', len, len_old);
+	else
+	        first_trial_id = trials_old + 1;
+	end
+else
+	resultOut.('msll') = zeros(EXPERIMENT.NUM_TRIALS, len);
+	resultOut.('mse') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+	resultOut.('llh') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+	resultOut.('tmse') = zeros(EXPERIMENT.NUM_TRIALS, len);;
 
+	resultOut.('hyp_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+	resultOut.('train_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+	resultOut.('test_time') = zeros(EXPERIMENT.NUM_TRIALS, len);;
+	resultOut.N_train = length(trainY);
+	resultOut.N_test = length(testY);
+	resultOut.('seeds') = zeros(EXPERIMENT.NUM_TRIALS, 1);
+	resultOut.('hyp_over_time') = {};
+        first_trial_id = 1;
+
+        save(results_file, 'resultOut'); %test if saving works
+        delete(results_file);
+end
+if first_trial_id <= EXPERIMENT.NUM_TRIALS
     m = EXPERIMENT.M;
-
-    for trial_id = 1:EXPERIMENT.NUM_TRIALS
+    for trial_id = first_trial_id:EXPERIMENT.NUM_TRIALS
 	seed = floor(rand(1) * 32000);
 	EXPERIMENT.SEED = seed;
 	rng('default');
 	rng(seed);
-    resultsOut.('seeds')(trial_id) = seed;
+    	resultsOut.('seeds')(trial_id) = seed;
 
         %----------------------------------------
         % Optimize hyperparameters.
@@ -56,7 +76,7 @@ resultOut.('hyp_over_time') = {};
         any(isnan(mFT) | isinf(abs(mFT)))
 
         resultOut.('llh')(trial_id, :) = nlZ;    
-        resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
         eval(sprintf('%s=resultOut;', resultVarName));
-        save(sprintf('%s%s_%s_fold%d_M%d', EXPERIMENT.RESULTS_DIR, resultVarName, EXPERIMENT.DATASET, EXPERIMENT.DATASET_FOLD, EXPERIMENT.M), resultVarName);
+        save(results_file, resultVarName);
     end
+end
