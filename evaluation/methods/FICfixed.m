@@ -11,7 +11,8 @@ function [times, theta_over_time, mF, s2F, nlZ, mFT] = FIC(EXPERIMENT, trainX, t
     ell = zeros(D,1);
     sf2 = 0;
     
-    hyp.cov = [ell; sf2; U];
+    hyp.cov = [ell; sf2];
     hyp = unwrap(hyp);    
-    [times, theta_over_time, mF, s2F, nlZ, mFT] = rpropFixedFICmex(EXPERIMENT.seed, abs(EXPERIMENT.NUM_HYPER_OPT_ITERATIONS), trainX, trainY, testX, unwrap(hyp), EXPERIMENT.M, U);
+    [times, theta_over_time, mF, s2F, nlZ] = rpropFixedFICmex(EXPERIMENT.SEED, abs(EXPERIMENT.NUM_HYPER_OPT_ITERATIONS), trainX, trainY, testX, unwrap(hyp), EXPERIMENT.M, U);
+    mFT = zeros(size(trainY));
 end
