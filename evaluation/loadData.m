@@ -106,10 +106,10 @@ elseif strcmp(EXPERIMENT.DATASET, 'CT_SLICES')
     ctslices = csvread('CT_SLICES/slice_localization_data.csv', 1);
     n = 4280;
     D = 384;
-    trainX = ctslices(1:n, 2:D); %leave out Patient ID
+    trainX = ctslices(1:n, 2:D+1); %leave out Patient ID
     trainY = ctslices(1:n, D+2);
     n_test = size(ctslices, 1) - n;
-    testX = ctslices(n+1:n+n_test, 2:D);
+    testX = ctslices(n+1:n+n_test, 2:D+1);
     testY = ctslices(n+1:n+n_test, D+2);
     clear ctsclices;
 elseif strcmp(EXPERIMENT.DATASET, 'CPU')
