@@ -1,6 +1,7 @@
 function testDegCovsLibGP()
 %TESTDEGCOVS This function compares what the matlab implementation
 %covariance functions produce against what the libGP implementations do.
+    testFastFood();
     testSolin();
     testFIC();
     testSM();
@@ -77,4 +78,28 @@ function testFIC()
 	iSigma = covDegFast(bf, seed, M, D, unwrap(hyp), [], [], p);
 	checkError(iSigma_o, iSigma, 'GPML', 'LibGP', sprintf('weight prior gradient %d', p));
     end
+end
+
+function testFastFood()
+    seed = 42;
+    [z, ~, y, hyp] = initEnv(seed);
+    [n, D] = size(z)
+    bf = {'FastFood'};
+    m = 2;
+    intD = 2^nextpow2(D)
+    M = m*intD %not *2 because we only need it for the matrices
+    iSigma = covDegFast(bf, seed, 2*M, D, unwrap(hyp));
+    phi = covDegFast(bf, seed, 2*M, D, unwrap(hyp), [], z);
+    [alpha, L, nlZ, dnlZ, s, g, randpi, b] = infFastFoodmex(2*M, unwrap(hyp), z, y, seed);
+    s = reshape(s', [M, 1]);
+    g = reshape(g', [M, 1]);
+    randpi = reshape(randpi', [M, 1]);
+    randpi = randpi + 1;
+    b = reshape(b', [M, 1]);
+    hyp.cov = [hyp.cov(D+1); hyp.cov(1:D)];
+    bf = {@covDegenerate, {@degFastFood, s, g, randpi, b}};
+    iSigma_o = 1./feval(bf{:}, hyp.cov);
+    checkError(iSigma_o, diag(iSigma), 'GPML', 'LibGP', 'weight prior');
+    phi_o = feval(bf{:}, hyp.cov, [], z);
+    checkError(phi_o, phi, 'GPML', 'LibGP', 'basis function');
 end

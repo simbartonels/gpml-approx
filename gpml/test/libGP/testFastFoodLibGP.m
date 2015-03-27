@@ -4,11 +4,15 @@ function testFastFoodLibGP()
     hyp.mean = [];
     D = size(x, 2);
     m = 1;
-    intD = 2^nextpow2(D);
-    M = m*intD; %not *2 because we only need it for the matrices
+    intD = 2^nextpow2(D)
+    M = m*intD %not *2 because we only need it for the matrices
     [alpha, L, nlZ, dnlZ, s, g, randpi, b] = infFastFoodmex(2*M, unwrap(hyp), x, y);
     %something's awfully wrong...
     %L = solve_chol(L, eye(size(L, 1)))
+    if any(any(isnan(alpha)))
+	alpha
+	error('alpha contains NaN!');
+    end
     L = L'\(L\eye(size(L, 1)));
     L = L * exp(2*hyp.lik);
     s = reshape(s', [M, 1]);
@@ -26,7 +30,7 @@ function testFastFoodLibGP()
     L_o = post.L;
     diff = max(max(abs(L_o - L)./L_o));
     if diff > 1e-10
-	L_o
+	%L_o
         diff = L_o - L
         error('Check computation of L matrix!');
     end
