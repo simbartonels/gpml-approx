@@ -76,6 +76,7 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         any(isnan(mFT) | isinf(abs(mFT)))
 
         resultOut.('llh')(trial_id, :) = nlZ;    
+	resultOut.('EXPERIMENT') = EXPERIMENT;
         eval(sprintf('%s=resultOut;', resultVarName));
         save(results_file, resultVarName);
     end
