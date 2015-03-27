@@ -1,4 +1,4 @@
-function [times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, trainX, trainY, testX, trial_id)
+function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, trainX, trainY, testX, trial_id)
     filename = sprintf('%s%s%sresultsFIC_fold%d_M%d.mat', EXPERIMENT.RESULTS_DIR, EXPERIMENT.DATASET, filesep, EXPERIMENT.DATASET_FOLD, EXPERIMENT.M)
     resultsFIC = load([EXPERIMENT.RESULTS_DIR filename]);
     resultsFIC = resultsFIC.resultsFIC;

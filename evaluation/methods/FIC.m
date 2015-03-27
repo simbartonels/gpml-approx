@@ -1,4 +1,4 @@
-function [times, theta_over_time, mF, s2F, nlZ, mFT] = FIC(EXPERIMENT, trainX, trainY, testX, trial_id)
+function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = FIC(EXPERIMENT, trainX, trainY, testX, trial_id)
     D = size(trainX, 2);
     M = EXPERIMENT.M;
     sn = 0.25; hyp.lik = log(sn);

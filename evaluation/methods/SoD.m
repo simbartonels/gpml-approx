@@ -1,4 +1,4 @@
-function [times, theta_over_time, mF, s2F, nlZ, mFT] = SoD(EXPERIMENT, trainX, trainY, testX, trial_id)
+function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = SoD(EXPERIMENT, trainX, trainY, testX, trial_id)
 error('Make sure to test this method first!');
 D = size(trainX, 2);
 M = EXPERIMENT.M;
