@@ -16,6 +16,7 @@ sf2 = exp(2*hyp(1));                               % signal variance
 mD = size(s, 1);
 if nargin == meta_args()
    % return weight prior
+   %FIXME: this is actually wrong!!!
    K = sf2*ones(2*mD, 1)/mD;
    return;
 elseif nargin == meta_args()+1
@@ -68,7 +69,7 @@ function W = multiplyW(z_org, mD, s, g, randpi, b, hyp)
         w = fwht(diag(b(idx))*z', D, 'hadamard')*D;
         %w = hadamard(D) * diag(b(idx))* z';
         P = eye(D);
-        P = P(randpi(idx), :);
+        P = P(randpi(idx), :)'; %for compliance with the libGP
         w = fwht(diag(g(idx))*P*w , D, 'hadamard')*D;
         %w = hadamard(D) * diag(gpi(idx))*w;
         W(idx, :) = diag(s(idx))*w;
