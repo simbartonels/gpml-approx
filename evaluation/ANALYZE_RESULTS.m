@@ -28,11 +28,11 @@ me = mfilename;                                            % what is my filename
 mydir = which(me); mydir = mydir(1:end-2-numel(me));        % where am I located
 RESULTS_DIR = [mydir, 'results', filesep];
 PLOTS_DIR = [mydir, 'plots', filesep]; % Ready plots go here.
-DATASETS = {'CT_SLICES'} % Plot data for these datasets only.
-METHODS = {'FastFood'} % Plot data for these methods only.
-Ms = {2048}
+DATASETS = {'PRECIPITATION'} % Plot data for these datasets only.
+METHODS = {'HSM', 'FastFood', 'SoD', 'FullSE'}%, 'FICfixed'} % Plot data for these methods only.
+Ms = {2048, 2048, 1940, 1500} %, 1000}
 
-plot_colors = {'r', 'g', 'b', 'k'}; % At least as many colors as methods 
+plot_colors = {'r', 'g', 'b', 'k', 'c'}; % At least as many colors as methods 
                                     % plotted. 
 PLOTFILETYPE='pdf';
 FILENAME_SUFFIX = '_unedited';
@@ -45,7 +45,7 @@ for dset_id = 1:length(DATASETS)
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         % Load data.
-        load(sprintf('%sresults%s_%s_fold%s_M%d', RESULTS_DIR, method, dataset, fold, Ms{method_id}));        
+        load(sprintf('%s%s%sresults%s_fold%s_M%d', RESULTS_DIR, dataset, filesep, method, fold, Ms{method_id}));        
     end
 end
 for dset_id = 1:length(DATASETS)
@@ -58,8 +58,9 @@ for dset_id = 1:length(DATASETS)
         method = METHODS{method_id};
         results = eval(sprintf('results%s', method));
         hold on;
-        plot(results.hyp_time, results.msll, '-', 'Color', plot_colors{method_id});
-        plots{method_id} = plot(mean(results.hyp_time), mean(results.msll), '.', 'Color', plot_colors{method_id});
+        x_value = results.hyp_time;
+        y_value = results.msll;
+        myplot;
         xlabel('Hyperparameter training time [s]');
         ylabel('MSLL');
         %set(gca, 'xscale', 'log');
@@ -75,31 +76,15 @@ for dset_id = 1:length(DATASETS)
         method = METHODS{method_id};
         results = eval(sprintf('results%s', method));
         hold on;
-        plot(results.hyp_time, results.llh, '-', 'Color', plot_colors{method_id});
-        plots{method_id} = plot(mean(results.hyp_time), mean(results.llh), '.', 'Color', plot_colors{method_id});
+        x_value = results.hyp_time;
+        y_value = results.llh;
+        myplot;
         xlabel('Hyperparameter training time [s]');
         ylabel('-LLH');
         %set(gca, 'xscale', 'log');
     end
     legend(cell2mat(plots), METHODS);
     print(['-d' PLOTFILETYPE] , [PLOTS_DIR dataset '_hyp_LLH' FILENAME_SUFFIX]);
-
-    %----------------------------------------
-    % Plot MSLL vs test time per datapoint.
-    %----------------------------------------
-    figure('visible', 'off');
-    for method_id = 1:length(METHODS)
-        method = METHODS{method_id};
-        results = eval(sprintf('results%s', method));
-        plot(results.test_time/results.N_test, results.msll, '-', 'Color', plot_colors{method_id});
-        hold on;
-        plots{method_id} = plot(mean(results.test_time)/results.N_test, mean(results.msll), '.', 'Color', plot_colors{method_id});
-        xlabel('Test time per datapoint [s]');
-        ylabel('MSLL');
-        set(gca, 'xscale', 'log');
-    end
-    legend(cell2mat(plots), METHODS);
-    print(['-d' PLOTFILETYPE], [PLOTS_DIR dataset '_test_MSLL' FILENAME_SUFFIX]);
     
     %----------------------------------------
     % Plot SMSE vs hyper-time.
@@ -108,9 +93,10 @@ for dset_id = 1:length(DATASETS)
     for method_id = 1:length(METHODS)
         method = METHODS{method_id};
         results = eval(sprintf('results%s', method));
-        plot(results.hyp_time, results.mse, 'x', 'Color', plot_colors{method_id});
         hold on;
-        plots{method_id} = plot(mean(results.hyp_time), mean(results.mse), '.', 'Color', plot_colors{method_id});
+        x_value = results.hyp_time; %(trial_id, :);
+        y_value = results.mse; %(trial_id, :);
+        myplot;
         xlabel('Hyperparameter training time [s]');
         ylabel('SMSE');
         %set(gca, 'xscale', 'log');
@@ -119,40 +105,5 @@ for dset_id = 1:length(DATASETS)
     legend(cell2mat(plots), METHODS);
     print(['-d' PLOTFILETYPE], [PLOTS_DIR dataset '_hyp_SMSE' FILENAME_SUFFIX]);
 
-    %----------------------------------------
-    % Plot SMSE vs hyper-time.
-    %----------------------------------------
-    figure('visible', 'off');
-    for method_id = 1:length(METHODS)
-        method = METHODS{method_id};
-        results = eval(sprintf('results%s', method));
-        plot(results.hyp_time, results.tmse, '.', 'Color', plot_colors{method_id});
-        hold on;
-	%plots{method_id} = plot(mean(results.hyp_time), mean(results.tmse), '.', 'Color', plot_colors{method_id});
-        xlabel('Hyperparameter training time [s]');
-        ylabel('Train SMSE');
-        %set(gca, 'xscale', 'log');
-        %set(gca, 'yscale', 'log');
-    end
-    legend(cell2mat(plots), METHODS);
-    print(['-d' PLOTFILETYPE], [PLOTS_DIR dataset '_hyp_TSMSE' FILENAME_SUFFIX]);
-    
-    %----------------------------------------
-    % Plot SMSE vs test time per datapoint.
-    %----------------------------------------
-    figure('visible', 'off');
-    for method_id = 1:length(METHODS)
-        method = METHODS{method_id};
-        results = eval(sprintf('results%s', method));
-        plot(results.test_time/results.N_test, results.mse, '.', 'Color', plot_colors{method_id});
-        hold on;
-        plots{method_id} = plot(mean(results.test_time)/results.N_test, mean(results.mse), '-', 'Color', plot_colors{method_id});
-        xlabel('Test time per datapoint [s]');
-        ylabel('SMSE');
-        set(gca, 'xscale', 'log');
-        set(gca, 'yscale', 'log');
-    end
-    legend(cell2mat(plots), METHODS);
-    print(['-d' PLOTFILETYPE], [PLOTS_DIR dataset '_test_SMSE' FILENAME_SUFFIX]);
     close all;
 end
