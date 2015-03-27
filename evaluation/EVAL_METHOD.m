@@ -20,10 +20,10 @@ results_file = sprintf('%s%s%s%s%s_fold%d_M%d.mat', EXPERIMENT.RESULTS_DIR, '', 
 if exist(results_file, 'file') == 2
 	disp('WARNING: An experiment results file already exists for this configuration. Attempting continuation of the experiment.');
 	load(results_file);
-	resultsOut = eval(resultVarName);
-        [trials_old, len_old] = size(resultOut.('hyp_time'));
+	resultOut = eval(resultVarName);
+    [trials_old, len_old] = size(resultOut.('hyp_time'));
 	disp('The following Experiment description was loaded and is used...');
-	EXPERIMENT = resultsOut.EXPERIMENT;
+	EXPERIMENT = resultOut.EXPERIMENT;
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
 	EXPERIMENT.NUM_TRIALS = num_trials;
 %	if len_old ~= len
@@ -70,20 +70,21 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
     for trial_id = first_trial_id:EXPERIMENT.NUM_TRIALS
 	if trial_id > size(resultOut.hyp_time, 1)
 		len_old = 0;
-	else
-		EXPERIMENT.LAST_HYPERS{trial_id} = resoutOut.hyp_over_time{triald_id}(:, end); 
+    else
+        len_old = size(resultOut.hyp_over_time{trial_id}, 2);
+		EXPERIMENT.LAST_HYPERS{trial_id} = resultOut.hyp_over_time{trial_id}(:, end); 
 	end
 	seed = EXPERIMENT.SEED{trial_id};
 	rng('default');
 	rng(seed);
-    	resultsOut.('seeds'){trial_id} = seed;
+    resultOut.('seeds'){trial_id} = seed;
 
         %----------------------------------------
         % Optimize hyperparameters.
         %----------------------------------------
 	EXPERIMENT.LAST_TRIAL = trial_id;
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = len - len_old;
-        [times, theta_over_time, mF, s2F, nlZ, ~] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
+    [times, theta_over_time, mF, s2F, nlZ, ~] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
         %----------------------------------------
         % Save data.
@@ -110,7 +111,7 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         disp('NaNs or Infs: ');
         any(isnan(mFT) | isinf(abs(mFT)))
 
-	resultOut.('EXPERIMENT') = EXPERIMENT;
+        resultOut.('EXPERIMENT') = EXPERIMENT;
         eval(sprintf('%s=resultOut;', resultVarName));
         save(results_file, resultVarName);
     end
