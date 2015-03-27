@@ -1,5 +1,5 @@
 function [times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, trainX, trainY, testX, trial_id)
-    filename = sprintf('resultsFIC_%s_fold%d.mat', EXPERIMENT.DATASET, EXPERIMENT.DATASET_FOLD);
+    filename = sprintf('%s%s%sresultsFIC_fold%d_M%d.mat', EXPERIMENT.RESULTS_DIR, EXPERIMENT.DATASET, filesep, EXPERIMENT.DATASET_FOLD, EXPERIMENT.M)
     resultsFIC = load([EXPERIMENT.RESULTS_DIR filename]);
     resultsFIC = resultsFIC.resultsFIC;
     D = size(trainX, 2);
@@ -17,14 +17,14 @@ function [times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, tr
     sf2 = 0;
     
     FIChyp = resultsFIC.hyp_over_time{trial_id};
-    ind = size(FIChyp, 2);
-    ind = 25 %TODO: remove
+    ind = size(FIChyp, 2)
+%    ind = 25 %TODO: remove
     FIChyp = FIChyp(:, ind);
     time_offset = resultsFIC.hyp_time(trial_id, ind);
 %    time_offset = time_offset(ind);
     disp('Setting noise to 0 for FIC and Multiscale compliance.');
     FIChyp(size(FIChyp, 1)) = -Inf;
     hyp = FIC_params_to_Multiscale(FIChyp, D, M);
-    [times, theta_over_time, mF, s2F, nlZ, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'FIC', 'CovSum (CovSEard, CovNoise)', hyp, 'SparseMultiScaleGP');
+    [times, theta_over_time, mF, s2F, nlZ, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'OptMultiscale', 'CovSum (CovSEard, CovNoise)', hyp, 'SparseMultiScaleGP');
     times = times + time_offset;
 end

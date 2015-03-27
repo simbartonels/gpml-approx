@@ -14,5 +14,5 @@ function [times, theta_over_time, mF, s2F, nlZ, mFT] = FIC(EXPERIMENT, trainX, t
     
     hyp.cov = [ell; sf2; U];
     hyp = unwrap(hyp);    
-    [times, theta_over_time, mF, s2F, nlZ, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'FIC', 'CovSum (CovSEard, CovNoise)', unwrap(hyp), 'FIC');
+    [times, theta_over_time, mF, s2F, nlZ, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'OptFIC', 'CovSum (CovSEard, CovNoise)', unwrap(hyp), 'FIC');
 end
