@@ -8,7 +8,7 @@ function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = FIC(EXPERIMEN
     U = trainX(sod, :);
     disp('Done.');
     size(U)
-    U = reshape(U', [M*D, 1]);
+    U = reshape(U, [M*D, 1]);
     ell = zeros(D,1);
     sf2 = 0;
     
