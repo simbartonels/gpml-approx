@@ -1,8 +1,7 @@
-for d = 1:10
-EXPERIMENT.METHOD = 'SoD';
-EXPERIMENT.DATASET = 'PRECIPITATION';
-EXPERIMENT.DATASET_FOLD = d;
-EXPERIMENT.M = 1940;
+EXPERIMENT.METHOD = 'Multiscale';
+EXPERIMENT.DATASET = 'PUMADYN';
+EXPERIMENT.DATASET_FOLD = 1;
+EXPERIMENT.M = 50;
 EXPERIMENT.NUM_TRIALS = 0;
 EXPERIMENT.RESULTS_DIR = './results/'; 
 resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
@@ -22,7 +21,7 @@ if exist(results_file, 'file') == 2
 else
     error('Result file not found.');
 end
-if EXPERIMENT.NUM_TRIALS > 1, error('Can not clean this yet'); end
+%if EXPERIMENT.NUM_TRIALS > 1, error('Can not clean this yet'); end
 first_trial_id = 1;
 if first_trial_id <= EXPERIMENT.NUM_TRIALS
     m = EXPERIMENT.M;
@@ -42,26 +41,26 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
                 seed = 0;
             end
         end
-        clear resultOut;
     	EXPERIMENT.SEED{trial_id} = seed;
-        resultOut.seeds{trial_id} = seed;
+        resultOutNew.seeds{trial_id} = seed;
 
         for i=1:size(times, 2)
             if times(i) < 0, break, end
-    	    resultOut.('hyp_time'){trial_id}(i) = times(i);
-            resultOut.('hyp_over_time'){trial_id}(:, i) = theta_over_time(:, i);
+    	    resultOutNew.('hyp_time'){trial_id}(i) = times(i);
+            resultOutNew.('hyp_over_time'){trial_id}(:, i) = theta_over_time(:, i);
             %disp(sprintf('Calculating MSE for iteration %d', i)); 
-            resultOut.('msll'){trial_id}(i) = msll(i);
-            resultOut.('mse'){trial_id}(i)  = mse(i);
-            resultOut.('llh'){trial_id}(i) = nlZ(i);   
+            resultOutNew.('msll'){trial_id}(i) = msll(i);
+            resultOutNew.('mse'){trial_id}(i)  = mse(i);
+            resultOutNew.('llh'){trial_id}(i) = nlZ(i);   
         end
         
-        EXPERIMENT.LAST_HYPERS{trial_id} = resultOut.hyp_over_time{trial_id}(:, end)
-        resultOut.('EXPERIMENT') = EXPERIMENT;
+        EXPERIMENT.LAST_HYPERS{trial_id} = resultOut.hyp_over_time{trial_id}(:, end);
+        resultOutNew.('EXPERIMENT') = EXPERIMENT;
+    end
         EXPERIMENT
-        EXPERIMENT.LAST_HYPERS{trial_id}
-        resultOut
-        eval(sprintf('%s=resultOut;', resultVarName));
+        EXPERIMENT.LAST_HYPERS{:}
+        resultOutNew
+        eval(sprintf('%s=resultOutNew;', resultVarName));
         prompt = 'Do you want to overwrite the result file? y/[n]: ';
         answer = input(prompt, 's');
         if answer == 'y'
@@ -70,8 +69,8 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         else
             disp('Taking no action.');
         end
-    end
+
 end
+
 clear EXPERIMENT;
 clear resultOut;
-end
