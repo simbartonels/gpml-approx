@@ -22,6 +22,5 @@ function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = FIC(EXPERIMEN
     U = trainX(sod, :);
     disp('Done.');
    
-    [times, theta_over_time, mF, s2F, nlZ] = rpropFixedFICmex(EXPERIMENT.SEED, abs(EXPERIMENT.NUM_HYPER_OPT_ITERATIONS), trainX, trainY, testX, unwrap(hyp), EXPERIMENT.M, U);
-    mFT = zeros(size(trainY));
+    [times, theta_over_time, mF, s2F, nlZ, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'FIC', 'CovSum (CovSEard, CovNoise)', unwrap(hyp), 'FICfixed', U);
 end
