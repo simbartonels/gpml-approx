@@ -85,7 +85,7 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         %----------------------------------------
 	EXPERIMENT.LAST_TRIAL = trial_id;
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = len - len_old;
-	[EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, ~] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
+	[EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, gradNorms, ~] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
         %----------------------------------------
         % Save data.
@@ -98,13 +98,13 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
 	len_old = abs(len_old);        
 	for i=1:size(times, 1)
             if times(i) < 0, break, end
-	    resultOut.('hyp_time'){trial_id}(i+len_old) = times(i) + time_offset(trial_id);
-	    resultOut.('hyp_over_time'){trial_id}(:, i+len_old) = theta_over_time(:, i);
-            %disp(sprintf('Calculating MSE for iteration %d', i)); 
+		    resultOut.('hyp_time'){trial_id}(i+len_old) = times(i) + time_offset(trial_id);
+	        resultOut.('hyp_over_time'){trial_id}(:, i+len_old) = theta_over_time(:, i);
             resultOut.('msll'){trial_id}(i+len_old) = mnlp(mF(:, i),testY,s2F(:, i), meanTest, varTest);
             resultOut.('mse'){trial_id}(i+len_old)  = mse(mF(:, i),testY, meanTest, varTest);
             %resultOut.('tmse')(trial_id, i)  = mse(mFT(:, i),trainY, meanTrain, varTrain);
-	    resultOut.('llh'){trial_id}(i+len_old) = nlZ(i);    
+			resultOut.('llh'){trial_id}(i+len_old) = nlZ(i);
+			resultOut.('grad_norms'){trial_id}(i+len_old) = gradNorms(i);
         end
         %disp('Last test error: ');
         %if size(mFT, 2) > 1, mFT = mFT(:, size(times, 1)); end
