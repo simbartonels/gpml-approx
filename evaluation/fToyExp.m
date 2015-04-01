@@ -4,7 +4,7 @@ trainX = randn([n, D]);
 %testX = randn([n, D]);
 testX = trainX + 1e-5 * randn([n, D]);
 
-testX = trainX;
+%testX = trainX;
 
 meanMatrix = repmat(mean(trainX), n, 1);
 stdMatrix  = repmat(std(trainX), n, 1);
@@ -31,6 +31,17 @@ smhyp=[log(ell); log(Uell); U; D*log(2*pi)/2; sn2];
 [e1, e2] = toyExpTwo(sd, trainX, smhyp, Mff, sn2, testX, c)
 
 [~, ~, trainY] = toyExpTwo(sd, trainX, smhyp, Mff, sn2, testX, c);
+
+iters = 30;
+[~, hyps, ~, ~, ~]= rpropmex(sd, iters, trainX, trainY, testX, 'OptMultiscale', 'CovSum ( CovSEard, CovNoise)', smhyp, M, 'SparseMultiScaleGP', c);
+[e1, e2] = toyExpTwo(sd, trainX, smhyp, Mff, sn2, testX, c)
+[e1, e2] = toyExpTwo(sd, trainX, hyps(:, end), Mff, sn2, testX, c)
+%(hyps(1:(D+M*D), end)-smhyp(1:(D+M*D)))'
+hyps(end, end)
+error('foo');
+
+
+
 [sortedValues,sortIndex] = sort(trainY,'descend');  %# Sort the values in
                                                   %#   descending order
 maxIndex = sortIndex(1:M);
@@ -67,12 +78,5 @@ dnlZ.lik
 [~, e2] = toyExpTwo(sd, trainX, smhyp, Mff, sn2, testX, c)
 nlZ
 
-error('foo');
 
-iters = 3;
-[~, hyps, ~, ~, ~]= rpropmex(sd, iters, trainX, trainY, testX, 'OptMultiscale', 'CovSum ( CovSEard, CovNoise)', smhyp, M, 'SparseMultiScaleGP', c);
-[e1, e2] = toyExpTwo(sd, trainX, smhyp, Mff, sn2, testX, c)
-[e1, e2] = toyExpTwo(sd, trainX, hyps(:, end), Mff, sn2, testX, c)
-%(hyps(1:(D+M*D), end)-smhyp(1:(D+M*D)))'
-hyps(end, end)
 end
