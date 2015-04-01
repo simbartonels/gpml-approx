@@ -4,6 +4,7 @@ function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EX
     sn = 0.25; hyp.lik = log(sn);
     disp('Executing FPC');
     %[~, U] = indPoints(trainX, M, 'c');
+    %U = U';
     sod = indPoints(trainX, M, 'c');
    U = trainX(sod, :);
     disp('Done.');
