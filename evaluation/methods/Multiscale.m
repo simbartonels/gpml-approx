@@ -1,4 +1,4 @@
-function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EXPERIMENT, trainX, trainY, testX, trial_id)
+function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, gradNorms, mFT] = Multiscale(EXPERIMENT, trainX, trainY, testX, trial_id)
     D = size(trainX, 2);
     M = EXPERIMENT.M;
     sn = 0.25; hyp.lik = log(sn);
@@ -6,15 +6,15 @@ function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, mFT] = Multiscale(EX
     %[~, U] = indPoints(trainX, M, 'c');
     %U = U';
     sod = indPoints(trainX, M, 'c');
-   U = trainX(sod, :);
+    U = trainX(sod, :);
     disp('Done.');
 %    size(U)
     U = reshape(U, [M*D, 1]);
     ell = zeros(D,1);
-    ellU = 0 * ones([M*D, 1]);
+    ellU = log(ones([M*D, 1])/2);
     sf2 = 0;
     hyp = [ell; ellU; U; sf2; log(sn)];
-    [times, theta_over_time, mF, s2F, nlZ, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'OptMultiscale', 'CovSum (CovSEard, CovNoise)', hyp, 'SparseMultiScaleGP');
+    [times, theta_over_time, mF, s2F, nlZ, gradNorms, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'OptMultiscale', 'CovSum (CovSEard, CovNoise)', hyp, 'SparseMultiScaleGP');
 return;
 
 %    filename = sprintf('%s%s%sresultsFIC_fold%d_M%d.mat', ...
