@@ -1,16 +1,17 @@
+clear;
 % 
 %datasets = {'PRECIPITATION'};%, 'CHEM', 'SARCOS'};
-datasets = {'PRECIPITATION'};
-
-EXPERIMENT.CAP_TIME = 6*60*60;
+datasets = {'PUMADYN'}
+%datasets = {'CT_SLICES'}
+EXPERIMENT.CAP_TIME = 150 + 5*60*60;
+EXPERIMENT.METHOD = 'FIC'
 % Choose the approximation to use: SoD, Local, FITC.
 % To use a custom method, create a test[method_name].m script 
 % analogous to out testSoD.m etc.
-EXPERIMENT.METHOD = 'Multiscale';
-EXPERIMENT.EXTRA = [1e-6, 1.0];
+EXPERIMENT.EXTRA = [1e-6]; %, 0.0; 0.0, 0.0];
 EXPERIMENT.M = 50;
-EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = -2000;
-EXPERIMENT.NUM_TRIALS = 1; % Number of experiment repetitions.
+EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = -100;
+EXPERIMENT.NUM_TRIALS = 5; % Number of experiment repetitions.
 
 addpath(genpath('../gpml'));
 addpath(genpath('./methods'));
