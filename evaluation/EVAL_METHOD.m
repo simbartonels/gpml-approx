@@ -69,8 +69,10 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
 	trial_id
 	if trial_id > size(resultOut.hyp_time, 2)
 	    len_old = 0;
+	    used_time = 0;
         else
             len_old = size(resultOut.hyp_over_time{trial_id}, 2);
+	    used_time = resultOut.hyp_time{trial_id}(end);
 	    EXPERIMENT.LAST_HYPERS{trial_id} = resultOut.hyp_over_time{trial_id}(:, end); 
         end
 
@@ -83,10 +85,13 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         %----------------------------------------
         % Optimize hyperparameters.
         %----------------------------------------
+        captime = EXPERIMENT.CAP_TIME;
+	EXPERIMENT.CAP_TIME = captime - used_time;
 	EXPERIMENT.LAST_TRIAL = trial_id;
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = len - len_old;
 	[EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, gradNorms, ~] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
+	EXPERIMENT.CAP_TIME = captime;
         %----------------------------------------
         % Save data.
         %----------------------------------------
@@ -112,7 +117,8 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         %last_test_error = mse(mF(:, size(times, 1)), testY, meanTest, varTest)
         disp('NaNs or Infs: ');
         any(any(isnan(mF) | isinf(abs(mF))))
-
+	disp('Last test error:');
+	resultOut.mse{trial_id}(end)
         resultOut.('EXPERIMENT') = EXPERIMENT;
         eval(sprintf('%s=resultOut;', resultVarName));
         save(results_file, resultVarName);
