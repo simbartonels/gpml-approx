@@ -14,6 +14,7 @@ for trial_id = 1:num_trials
 	EXPERIMENT.SEED{trial_id} = seed;
 end
 
+captime = EXPERIMENT.CAP_TIME;
 %check if there already some results
 resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
 results_file = sprintf('%s%s%s%s%s_fold%d_M%d.mat', EXPERIMENT.RESULTS_DIR, '', EXPERIMENT.DATASET, filesep, resultVarName, EXPERIMENT.DATASET_FOLD, EXPERIMENT.M)
@@ -26,6 +27,7 @@ if exist(results_file, 'file') == 2
 	EXPERIMENT = resultOut.EXPERIMENT;
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
 	EXPERIMENT.NUM_TRIALS = num_trials;
+	EXPERIMENT.CAP_TIME = captime;
 	EXPERIMENT
 %	if len_old ~= len
 %		error('The current number of hyper-parameter optimization steps (%d) is different from the previous number of steps (%d). This is not allowed yet.', len, len_old);
@@ -85,7 +87,6 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         %----------------------------------------
         % Optimize hyperparameters.
         %----------------------------------------
-        captime = EXPERIMENT.CAP_TIME;
 	if EXPERIMENT.CAP_TIME - used_time > 0
 
 	EXPERIMENT.CAP_TIME = captime - used_time;
