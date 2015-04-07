@@ -28,19 +28,19 @@ function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, gradNorms, mFT] = Mu
     FIChyp = FIChyp(:, ind);
     time_offset = resultsFIC.hyp_time{trial_id}(ind);
 %    time_offset = time_offset(ind);
-    disp('Setting noise to 0 for FIC and Multiscale compliance.');
-    FIChyp(size(FIChyp, 1)) = 1e-50;
+    disp('Setting noise to low value for FIC and Multiscale compliance.');
+    FIChyp(size(FIChyp, 1)) = 1e-150;
     hyp = FIC_params_to_Multiscale(FIChyp, D, M);
     cap = EXPERIMENT.CAP_TIME;
 	%are we continuing an experiment? ...
     	if isfield(EXPERIMENT, 'LAST_HYPERS')
 		if size(EXPERIMENT.LAST_HYPERS, 2) >= trial_id
-			% in that case the captime is taken care of in libgpMexCall
+			% in that case the captime was taken care of in EVAL_METHOD
 			time_offset = 0;
 		end
 	end
     EXPERIMENT.CAP_TIME = cap - time_offset;
     [times, theta_over_time, mF, s2F, nlZ, gradNorms, mFT] = libgpMexCall(EXPERIMENT, trainX, trainY, testX, 'OptMultiscale', 'CovSum (CovSEard, CovNoise)', hyp, 'SparseMultiScaleGP');
-    times = times + time_offset;
+    times(times>0) = times(times>0) + time_offset;
     EXPERIMENT.CAP_TIME = cap;
 end
