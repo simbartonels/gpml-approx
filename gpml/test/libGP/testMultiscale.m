@@ -113,6 +113,10 @@ M = 50;
 FICtestError = mean((mFfic-testY).^2./varTest)
     hyp = FIC_params_to_Multiscale(FIChyp, D, M);
     %hyp(end-1) = FIChyp(D+1);
+f = sum(FIChyp(1:D)) %/2;
+    lsf = 2*FIChyp(D+1)+f;    
+    hyp(end-1) = lsf;
+    
     diag(L)'
     ind_noise_factor = 1e-6;%*sqrt(prod(exp(logell))*(2*pi)^D);
     [alpha, L, ~, mF, ~] = infLibGPmex(trainX, trainY, testX, 'FIC', 'CovSum (CovSEard, CovNoise)', hyp, M, 'SparseMultiScaleGP', 0, ind_noise_factor);
