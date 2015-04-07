@@ -104,7 +104,7 @@ elseif strcmp(EXPERIMENT.DATASET, 'DEBUG')
 elseif strcmp(EXPERIMENT.DATASET, 'CT_SLICES')
     disp('Loading file...');
     ctslices = csvread('CT_SLICES/slice_localization_data.csv', 1);
-    n = 4280;
+    n = 42800;
     D = 384;
     trainX = ctslices(1:n, 2:D+1); %leave out Patient ID
     trainY = ctslices(1:n, D+2);
@@ -160,6 +160,11 @@ elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
     trainY = y([1:(a-1),(b+1):n]);
     n = size(trainX, 1);
 end
+% Reseed the rng.
+rand('seed', 100*sum(clock));
+if(~EXPERIMENT.PREPROCESS_DATASET)
+	return;
+end
 %------------------------------------------------------------------------
 % DON'T MODIFY THIS.
 % Normalize data to zero mean, variance one. 
@@ -185,5 +190,3 @@ if any(any(isnan(trainY) | isinf(trainY))), error('Training targets contains NaN
 if any(any(isnan(testX) | isinf(testX))), error('Test set contains NaN Values!'); end
 if any(any(isnan(testY) | isinf(testY))), error('Training targets contains NaN Values!'); end
 
-% Reseed the rng.
-rand('seed', 100*sum(clock));
