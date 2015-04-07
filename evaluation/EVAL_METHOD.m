@@ -86,6 +86,8 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         % Optimize hyperparameters.
         %----------------------------------------
         captime = EXPERIMENT.CAP_TIME;
+	if EXPERIMENT.CAP_TIME - used_time > 0
+
 	EXPERIMENT.CAP_TIME = captime - used_time;
 	EXPERIMENT.LAST_TRIAL = trial_id;
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = len - len_old;
@@ -123,7 +125,7 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         eval(sprintf('%s=resultOut;', resultVarName));
         save(results_file, resultVarName);
 	end
-
+	end
     end
 end
 disp('Done.');
