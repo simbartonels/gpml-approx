@@ -1,5 +1,4 @@
 function [EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, gradNorms, mFT] = SoD(EXPERIMENT, trainX, trainY, testX, trial_id)
-error('Make sure to test this method first!');
 D = size(trainX, 2);
 M = EXPERIMENT.M;
 hyp.cov = [zeros(D,1);0];
