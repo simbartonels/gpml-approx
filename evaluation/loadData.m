@@ -169,12 +169,18 @@ end
 % DON'T MODIFY THIS.
 % Normalize data to zero mean, variance one. 
 %------------------------------------------------------------------------
-meanMatrix = repmat(mean(trainX), n, 1);
 trainYMean = mean(trainY);
 trainYStd  = std(trainY);
-trainYStd(trainYStd == 0) = 1; % we don't want to divide by zero.
-stdMatrix  = repmat(std(trainX), n, 1);
-stdMatrix(stdMatrix == 0) = 1;
+%trainYStd(trainYStd == 0) = 1; % we don't want to divide by zero.
+stdTrainX = std(trainX);
+stdMatrix  = repmat(stdTrainX, n, 1);
+%stdMatrix(stdMatrix == 0) = 1;
+trainX = trainX(:, stdTrainX ~= 0); %remove useless features
+testX = testX(:, stdTrainX ~= 0);
+stdMatrix = stdMatrix(:, stdTrainX ~= 0);
+meanMatrix = repmat(mean(trainX), n, 1);
+
+D = size(trainX, 2); 
 trainX = (trainX - meanMatrix);
 trainX = trainX./stdMatrix;
 trainY = (trainY - trainYMean);
