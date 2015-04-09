@@ -1,7 +1,9 @@
 function testDegCovsLibGP()
 %TESTDEGCOVS This function compares what the matlab implementation
 %covariance functions produce against what the libGP implementations do.
+    testFastFoodApproximationQuality();
     testFastFood();
+	return;
     testSolin();
     testFIC();
     testSM();
@@ -81,7 +83,7 @@ function testFIC()
 end
 
 function testFastFood()
-    seed = 42;
+    seed = randi(32000)
     [z, ~, y, hyp] = initEnv(seed);
     [n, D] = size(z)
     bf = {'FastFood'};
@@ -102,4 +104,40 @@ function testFastFood()
     checkError(iSigma_o, diag(iSigma), 'GPML', 'LibGP', 'weight prior');
     phi_o = feval(bf{:}, hyp.cov, [], z);
     checkError(phi_o, phi, 'GPML', 'LibGP', 'basis function');
+end
+
+function testFastFoodApproximationQuality()
+    %seed = randi(32000)
+    seed = 28033
+    rng(seed);
+    D = 4;
+    m = 32;
+    n = 3;
+    nt = 2;
+    hyp.cov = [randn(D+1, 1)];
+    hyp.lik = randn(1);
+    x = randn(n, D);
+    y = randn(n, 1);
+    z = randn(nt, D);
+    %z = x;
+    [s, g, randpi, b] = initFastFood(m, D, []);
+
+    fastFoodBF = {@degFastFood, s, g, randpi, b};
+    degCov = {@covDegenerateNaive, fastFoodBF};
+    ff_hyp = hyp;
+    ff_hyp.cov = [hyp.cov(D+1); hyp.cov(1:D)];
+    phi = feval(fastFoodBF{:}, ff_hyp.cov, x)'
+    [mF3, s2F3, ~, ~, nlZ3, post3] = gp(ff_hyp, @infExact, [], degCov, @likGauss, x, y, z);
+
+    [mF, s2F, ~, ~, nlZ, post] = gp(hyp, @infExact, [], {@covSEard}, @likGauss, x, y, z);
+    checkError(mF, mF3, 'fullGP', 'FastFood', 'mean');
+
+    Dintern = 2^nextpow2(D);
+    shape = [Dintern, m];
+    extra = [reshape(s, shape); reshape(g, shape); reshape(b, shape)];
+    %TODO is this M correct?
+    [alpha2, L2, nlZ2, mF2, s2F2] = infLibGPmex(x, y, z, 'degenerate', 'CovSum (CovSEard, CovNoise)', unwrap(hyp), 2*m*Dintern, 'FastFood', seed, extra);
+
+    checkError(mF, mF2, 'GPML', 'LibGP', 'mean');
+    checkError(s2F, s2F2, 'GPML', 'LibGP', 'variance');
 end

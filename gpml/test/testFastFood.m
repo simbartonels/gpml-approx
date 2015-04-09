@@ -82,8 +82,8 @@ function testApproximationQuality()
     rng(sd);
     D = 4;
     m = 256;
-    n = 1; %m*D+1;
-    z = 1;
+    n = 3; %m*D+1;
+    z = 3;
 
     ls = exp(randn(1)*ones([D,1]));
     ls = exp(randn([D, 1]));
@@ -92,6 +92,7 @@ function testApproximationQuality()
 
     x = rand(n, D);
     xs = rand(z, D);
+    xs = x;
     ffhyp.lik = log(noise)/2;
     ffhyp.cov = [log(sf2)/2; log(ls)];
     hyp.lik = ffhyp.lik;

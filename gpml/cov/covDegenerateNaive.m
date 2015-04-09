@@ -15,15 +15,17 @@ dg = strcmp(z,'diag') && numel(z)>0;
 %the weight prior
 sigma = diag(feval(bf{:}, hyp));
 bfx = feval(bf{:}, hyp, x);
-
-if nargin <= 4
-    if dg
-      % gp.m will make this call
-      K = diag(bfx'*sigma*bfx);
+bfz = feval(bf{:}, hyp, z);
+if dg
+    K = diag(bfx'*sigma*bfx);
+else
+    if xeqz
+      bfz = bfx;
     else
-      K = bfx'*sigma*bfx;
+      bfz = feval(bf{:}, hyp, z);
     end
-else                                                        % derivatives
-    bfz = feval(bf{:}, hyp, z);
     K = bfx'*sigma*bfz;
+end
+if nargin > 4                                                        % derivatives
+    error('gradients not implemented');
 end
