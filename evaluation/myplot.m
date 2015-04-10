@@ -2,6 +2,18 @@ time_mean_cells = {};
 value_mean_cells = {};
 for j=1:size(x_value, 2)
     plot(x_value{j}, y_value{j}, '.', 'Color', plot_colors{method_id});
+    if results.grad_norms{j}(end) < 1e-4
+	%converged
+	last_step_symbol = '+';
+    elseif isnan(results.grad_norms{j}(end-1))
+	%crashed
+	last_step_symbol = 'x';
+    else
+	%timeout
+	last_step_symbol = '*';
+    end
+   plot(x_value{j}(end), y_value{j}(end), last_step_symbol, 'Color', plot_colors{method_id});
+    % plotting mean values
     for k=1:max(size(x_value{j}, 2), size(time_mean_cells, 2))
         make_copy_from_last_cell = true;
         if k <= size(x_value{j}, 2)
