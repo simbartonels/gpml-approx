@@ -23,11 +23,14 @@ if exist(results_file, 'file') == 2
 	load(results_file);
 	resultOut = eval(resultVarName);
         trials_old = size(resultOut.('hyp_time'), 2);
-	disp('The following Experiment description was loaded and is used...');
 	EXPERIMENT = resultOut.EXPERIMENT;
 	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
 	EXPERIMENT.NUM_TRIALS = num_trials;
 	EXPERIMENT.CAP_TIME = captime;
+	if ~isfield(EXPERIMENT, 'PREPROCESS_DATASET')
+		EXPERIMENT.PREPROCESS_DATASET = true;
+	end
+	disp('The following Experiment description was loaded and is used...');
 	EXPERIMENT
 %	if len_old ~= len
 %		error('The current number of hyper-parameter optimization steps (%d) is different from the previous number of steps (%d). This is not allowed yet.', len, len_old);
@@ -62,6 +65,7 @@ else
         delete(results_file);
 	clear resultOut;
 	resultOut.hyp_time = {}
+	resultOut.grad_norms{1} = 1;
 	time_offset = zeros([EXPERIMENT.NUM_TRIALS, 1]);
 end
 EXPERIMENT.DATASET_FOLDS = folds;
@@ -87,45 +91,51 @@ if first_trial_id <= EXPERIMENT.NUM_TRIALS
         %----------------------------------------
         % Optimize hyperparameters.
         %----------------------------------------
-	if EXPERIMENT.CAP_TIME - used_time > 0
-
-	EXPERIMENT.CAP_TIME = captime - used_time;
-	EXPERIMENT.LAST_TRIAL = trial_id;
-	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = len - len_old;
-	[EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, gradNorms, ~] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
-	EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
-	EXPERIMENT.CAP_TIME = captime;
-        %----------------------------------------
-        % Save data.
-        %----------------------------------------
-        
-        % I just assignt the same prediction time
-        %resultOut.('train_time')(trial_id, :) = 0; %predTime-testTime;
-        %resultOut.('test_time')(trial_id, :) = 0; %testTime;
-        %resultOut.('hyps'){trial_id} = [resultOut.('hyps'){trial_id} theta_over_time]; %[resultOut.('hyps'){trial_id} rewrap(theta_over_time];
-	len_old = abs(len_old);        
-	for i=1:size(times, 1)
-            if times(i) < 0, break, end
-		    resultOut.('hyp_time'){trial_id}(i+len_old) = times(i) + time_offset(trial_id);
-	        resultOut.('hyp_over_time'){trial_id}(:, i+len_old) = theta_over_time(:, i);
-            resultOut.('msll'){trial_id}(i+len_old) = mnlp(mF(:, i),testY,s2F(:, i), meanTest, varTest);
-            resultOut.('mse'){trial_id}(i+len_old)  = mse(mF(:, i),testY, meanTest, varTest);
-            %resultOut.('tmse')(trial_id, i)  = mse(mFT(:, i),trainY, meanTrain, varTrain);
-			resultOut.('llh'){trial_id}(i+len_old) = nlZ(i);
-			resultOut.('grad_norms'){trial_id}(i+len_old) = gradNorms(i);
-        end
-        %disp('Last test error: ');
-        %if size(mFT, 2) > 1, mFT = mFT(:, size(times, 1)); end
-        %last_train_error = mse(mFT, trainY, meanTrain, varTrain)
-        %last_test_error = mse(mF(:, size(times, 1)), testY, meanTest, varTest)
-        disp('NaNs or Infs: ');
-        any(any(isnan(mF) | isinf(abs(mF))))
-	disp('Last test error:');
-	resultOut.mse{trial_id}(end)
-        resultOut.('EXPERIMENT') = EXPERIMENT;
-        eval(sprintf('%s=resultOut;', resultVarName));
-        save(results_file, resultVarName);
+        grad_norm = 1;
+	if trial_id <= size(resultOut.grad_norms, 2), grad_norm = resultOut.grad_norms{trial_id}(end); end
+	if EXPERIMENT.CAP_TIME - used_time > 0 & grad_norm > 1e-4
+		EXPERIMENT.CAP_TIME = captime - used_time;
+		EXPERIMENT.LAST_TRIAL = trial_id;
+		EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = len - len_old;
+		[EXPERIMENT, times, theta_over_time, mF, s2F, nlZ, gradNorms, ~] = feval(EXPERIMENT.METHOD, EXPERIMENT, trainX, trainY, testX, trial_id);
+		EXPERIMENT.NUM_HYPER_OPT_ITERATIONS = iters;
+		EXPERIMENT.CAP_TIME = captime;
+		%----------------------------------------
+		% Save data.
+		%----------------------------------------
+		
+		% I just assignt the same prediction time
+		%resultOut.('train_time')(trial_id, :) = 0; %predTime-testTime;
+		%resultOut.('test_time')(trial_id, :) = 0; %testTime;
+		%resultOut.('hyps'){trial_id} = [resultOut.('hyps'){trial_id} theta_over_time]; %[resultOut.('hyps'){trial_id} rewrap(theta_over_time];
+		len_old = abs(len_old);        
+		for i=1:size(times, 1)
+		    if times(i) < 0, break, end
+			    resultOut.('hyp_time'){trial_id}(i+len_old) = times(i) + time_offset(trial_id);
+			resultOut.('hyp_over_time'){trial_id}(:, i+len_old) = theta_over_time(:, i);
+		    resultOut.('msll'){trial_id}(i+len_old) = mnlp(mF(:, i),testY,s2F(:, i), meanTest, varTest);
+		    resultOut.('mse'){trial_id}(i+len_old)  = mse(mF(:, i),testY, meanTest, varTest);
+		    %resultOut.('tmse')(trial_id, i)  = mse(mFT(:, i),trainY, meanTrain, varTrain);
+				resultOut.('llh'){trial_id}(i+len_old) = nlZ(i);
+				resultOut.('grad_norms'){trial_id}(i+len_old) = gradNorms(i);
+		end
+		%disp('Last test error: ');
+		%if size(mFT, 2) > 1, mFT = mFT(:, size(times, 1)); end
+		%last_train_error = mse(mFT, trainY, meanTrain, varTrain)
+		%last_test_error = mse(mF(:, size(times, 1)), testY, meanTest, varTest)
+		disp('NaNs or Infs: ');
+		any(any(isnan(mF) | isinf(abs(mF))))
+		disp('Last test error:');
+		resultOut.mse{trial_id}(end)
+		resultOut.('EXPERIMENT') = EXPERIMENT;
+		eval(sprintf('%s=resultOut;', resultVarName));
+		save(results_file, resultVarName);
+	else
+		remaining_time = EXPERIMENT.CAP_TIME - used_time 
+		grad_norm
 	end
+	else
+		fprintf('Number of trials exhausted.');
 	end
     end
 end
