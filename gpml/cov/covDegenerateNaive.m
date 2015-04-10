@@ -9,13 +9,12 @@ if nargin<2, K = feval(bf{:}); return; end              % report number of param
 
 % determine mode
 if nargin < 4, z = []; end
-dg = strcmp(z,'diag') && numel(z)>0;       
+xeqz = numel(z)==0; dg = strcmp(z,'diag') && numel(z)>0;       
 
 [n,D] = size(x);
 %the weight prior
 sigma = diag(feval(bf{:}, hyp));
 bfx = feval(bf{:}, hyp, x);
-bfz = feval(bf{:}, hyp, z);
 if dg
     K = diag(bfx'*sigma*bfx);
 else
