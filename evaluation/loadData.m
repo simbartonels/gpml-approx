@@ -28,7 +28,7 @@ if ~isfield(EXPERIMENT, 'DATASET')
     error('DATASET field in EXPERIMENT not set.\n');
 end
 
-EXPERIMENT.DATA_SET_FOLDS = 1;
+EXPERIMENT.DATASET_FOLDS = 1;
 rng('default');
 %----------------------------------------
 % MODIFY THIS TO
@@ -158,7 +158,15 @@ elseif strcmp(EXPERIMENT.DATASET, 'PRECIPITATION')
     testY = y(a:b);
     trainX = x([1:(a-1),(b+1):n], :);
     trainY = y([1:(a-1),(b+1):n]);
-    n = size(trainX, 1);
+elseif strcmp(EXPERIMENT.DATASET, 'INSURANCE')
+	EXPERIMENT.DATASET_FOLDS = 1;
+	insurance = csvread('INSURANCE/ticdata2000.txt');
+	[n, D] = size(insurance);
+	trainX = insurance(:, 1:D-1);
+	trainY = insurance(:, D);
+	clear insurance;
+	testX = csvread('INSURANCE/ticeval2000.txt');
+	testY = csvread('INSURANCE/tictgts2000.txt');
 end
 % Reseed the rng.
 rand('seed', 100*sum(clock));
@@ -169,6 +177,7 @@ end
 % DON'T MODIFY THIS.
 % Normalize data to zero mean, variance one. 
 %------------------------------------------------------------------------
+n = size(trainX, 1);
 trainYMean = mean(trainY);
 trainYStd  = std(trainY);
 %trainYStd(trainYStd == 0) = 1; % we don't want to divide by zero.
