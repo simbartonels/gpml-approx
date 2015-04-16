@@ -1,7 +1,7 @@
 clear;
-EXPERIMENT.METHOD = 'SoD';
+EXPERIMENT.METHOD = 'FastFood';
 EXPERIMENT.DATASET = 'PRECIPITATION';
-EXPERIMENT.M = 1940;
+EXPERIMENT.M = 2048;
 EXPERIMENT.NUM_TRIALS = 0;
 EXPERIMENT.RESULTS_DIR = './results/'; 
 resultVarName = sprintf('results%s', EXPERIMENT.METHOD);
@@ -18,7 +18,7 @@ for d = 1:folds
         error('Result file not found.');
     end
     first_trial_id = 1;
-    last_trial_id = size(resultOut.hyp_time, 1);
+    last_trial_id = size(resultOut.hyp_time, 2);
     m = EXPERIMENT.M;
     for trial_id = first_trial_id:last_trial_id
         resultOutNew.seeds{trial_counter} = resultOut.('seeds'){trial_id};
